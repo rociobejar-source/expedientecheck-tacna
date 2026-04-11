@@ -469,7 +469,7 @@ function irADetalle(d) {
   document.getElementById('det-fin').textContent = d.fecha_fin_ejecucion || '—';
   document.getElementById('det-costo').textContent = fmt(d.costo_actualizado);
   document.getElementById('det-viable').textContent = fmt(d.mto_viable);
-  document.getElementById('det-avfis').textContent = (d.avance_fisico||0).toFixed(1) + '%';
+  document.getElementById('det-avfis').textContent = (d._avFis||0).toFixed(1) + '%';
   document.getElementById('det-avfin').textContent = avFin.toFixed(1) + '%';
   document.getElementById('det-pim').textContent = fmt(d.pim_ano_vigente);
   document.getElementById('det-dev').textContent = fmt(d.dev_ano_vigente);
@@ -480,8 +480,8 @@ function irADetalle(d) {
 
   const alertasDiv = document.getElementById('alertas-auto');
   const alertas = [];
-  if (d._alerta === 'rojo') alertas.push({col:'dot-rojo', txt:'Avance financiero (' + avFin.toFixed(0) + '%) muy por encima del físico (' + (d.avance_fisico||0).toFixed(0) + '%)', causa:'Brecha de ' + (avFin - (d.avance_fisico||0)).toFixed(0) + ' puntos porcentuales. Revisar valorización.'});
-  if (d._alerta === 'amarillo') alertas.push({col:'dot-amber-c', txt:'Avance financiero (' + avFin.toFixed(0) + '%) supera al físico (' + (d.avance_fisico||0).toFixed(0) + '%)', causa:'Brecha de ' + (avFin - (d.avance_fisico||0)).toFixed(0) + ' puntos. Se recomienda seguimiento.'});
+  if (d._alerta === 'rojo') alertas.push({col:'dot-rojo', txt:'Avance financiero (' + avFin.toFixed(0) + '%) muy por encima del físico (' + (d._avFis||0).toFixed(0) + '%)', causa:'Brecha de ' + (avFin - (d._avFis||0)).toFixed(0) + ' puntos porcentuales. Revisar valorización.'});
+  if (d._alerta === 'amarillo') alertas.push({col:'dot-amber-c', txt:'Avance financiero (' + avFin.toFixed(0) + '%) supera al físico (' + (d._avFis||0).toFixed(0) + '%)', causa:'Brecha de ' + (avFin - (d._avFis||0)).toFixed(0) + ' puntos. Se recomienda seguimiento.'});
   if (!alertas.length) alertas.push({col:'', txt:'Sin alertas automáticas detectadas', causa:'El avance físico y financiero están alineados.'});
   alertasDiv.innerHTML = alertas.map(a => `<div class="alerta-row"><div class="dot-alerta ${a.col}" style="${!a.col?'background:#27ae60':''}"></div><div><div>${a.txt}</div><div class="alerta-causa">${a.causa}</div></div></div>`).join('');
 
@@ -552,11 +552,14 @@ function guardar(msg) {
 async function loadData() {
   document.getElementById('tbody').innerHTML = '<tr><td colspan="8" class="loading">Cargando desde Supabase...</td></tr>';
   try {
-   const res = await fetch(`${SB_URL}/rest/v1/ssi_inversiones?select=*&order=pim_ano_vigente.desc&apikey=${SB_KEY}`);
+    const res = await fetch(`${SB_URL}/rest/v1/ssi_inversiones?select=*&order=pim_ano_vigente.desc`, {
+      headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY }
+    });
     const data = await res.json();
-    allData = data.filter(d => d.pim_ano_vigente > 0).map(d => {
+    allData = data.filter(d => (d.pim_ano_vigente || 0) > 0).map(d => {
+      const avFis = d.porc_avance_fis ?? d.avance_fisico ?? 0;
       const avFin = d.pim_ano_vigente>0 ? (d.dev_ano_vigente/d.pim_ano_vigente*100) : 0;
-      return { ...d, _alerta: getAlerta(d.avance_fisico, avFin) };
+      return { ...d, _avFis: avFis, _alerta: getAlerta(avFis, avFin) };
     });
     const rojas = allData.filter(d => d._alerta==='rojo').length;
     const amarillas = allData.filter(d => d._alerta==='amarillo').length;
