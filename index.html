@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ExpedienteCheck · Municipalidad Provincial de Tacna</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f4f0; color: #1a1a1a; font-size: 14px; }
+.page { display: none; }
+.page.active { display: block; }
+
+/* HEADER */
+.header { background: #1a1f2e; color: white; padding: 12px 24px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+.logo { font-size: 13px; font-weight: 600; color: #f0c040; }
+.header-nav { font-size: 13px; color: #aaa; cursor: pointer; }
+.header-nav:hover { color: white; }
+.header-user { font-size: 13px; color: #aaa; }
+
+/* ROLE BAR */
+.role-bar { background: white; border-bottom: 1px solid #e5e3dc; padding: 10px 24px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.role-label { font-size: 12px; color: #888; }
+.role-btn { padding: 5px 14px; border-radius: 16px; border: 1px solid #ddd; font-size: 12px; cursor: pointer; background: white; color: #444; }
+.role-btn.active-especialista { background: #1a4f7a; color: white; border-color: #1a4f7a; }
+.role-btn.active-residente { background: #0f6e56; color: white; border-color: #0f6e56; }
+.role-btn.active-supervisor { background: #7d3a00; color: white; border-color: #7d3a00; }
+
+/* MAIN */
+.main { padding: 20px 24px; max-width: 1200px; margin: 0 auto; }
+
+/* DASHBOARD */
+.top-row { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 6px; }
+.page-title { font-size: 22px; font-weight: 400; }
+.page-title strong { font-weight: 600; }
+.page-sub { font-size: 13px; color: #666; margin-bottom: 20px; }
+.sync-btn { background: #1a1f2e; color: white; border: none; padding: 9px 18px; border-radius: 8px; font-size: 13px; cursor: pointer; }
+.sync-btn:hover { background: #2d3550; }
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin-bottom: 20px; }
+.kpi { background: white; border-radius: 10px; padding: 16px; border: 0.5px solid #e5e3dc; }
+.kpi-label { font-size: 10px; color: #888; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 8px; }
+.kpi-value { font-size: 26px; font-weight: 500; color: #1a1a1a; }
+.kpi-sub { font-size: 12px; color: #888; margin-top: 6px; }
+.kpi-red .kpi-value { color: #c0392b; }
+.kpi-amber .kpi-value { color: #b7770d; }
+.kpi-teal .kpi-value { color: #0f6e56; }
+.alert-banner { background: #fdf0ed; border: 1px solid #f5ccc0; border-radius: 8px; padding: 12px 16px; margin-bottom: 16px; font-size: 13px; color: #7d3020; display: none; }
+.filters { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+.filter-btn { padding: 6px 16px; border-radius: 20px; border: 1px solid #ddd; font-size: 13px; cursor: pointer; background: white; color: #444; }
+.filter-btn.active { background: #1a1f2e; color: white; border-color: #1a1f2e; }
+.table-card { background: white; border-radius: 10px; border: 0.5px solid #e5e3dc; overflow: hidden; }
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+thead { background: #1a1f2e; }
+th { padding: 11px 14px; text-align: left; font-weight: 500; font-size: 10px; letter-spacing: 0.6px; text-transform: uppercase; color: white; white-space: nowrap; }
+td { padding: 11px 14px; border-bottom: 0.5px solid #f0ede6; vertical-align: middle; }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: #fafaf8; }
+.bar-wrap { width: 80px; background: #eee; border-radius: 4px; height: 5px; display: inline-block; vertical-align: middle; margin-right: 6px; }
+.bar-fill { height: 5px; border-radius: 4px; }
+.bar-green { background: #27ae60; }
+.bar-amber { background: #f39c12; }
+.bar-red { background: #e74c3c; }
+.badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 500; margin: 1px 0; }
+.badge-red { background: #fde8e8; color: #8b2020; }
+.badge-amber { background: #fef3cd; color: #7d5a00; }
+.badge-green { background: #e8f8f0; color: #1a6b3c; }
+.estado { font-size: 12px; font-weight: 500; white-space: nowrap; }
+.estado-red { color: #c0392b; }
+.estado-amber { color: #b7770d; }
+.estado-green { color: #1a6b3c; }
+.obra-name { font-weight: 500; font-size: 13px; }
+.obra-entidad { font-size: 11px; color: #888; margin-top: 2px; }
+.loading { text-align: center; padding: 48px; color: #888; font-size: 14px; }
+.ver-btn { padding: 5px 12px; border: 0.5px solid #ddd; border-radius: 6px; font-size: 12px; cursor: pointer; background: white; color: #444; }
+.ver-btn:hover { background: #1a1f2e; color: white; border-color: #1a1f2e; }
+.dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; }
+.dot-red { background: #e74c3c; }
+.dot-amber { background: #f39c12; }
+.dot-green { background: #27ae60; }
+
+/* DETALLE */
+.obra-header-card { background: white; border-radius: 10px; border: 0.5px solid #e5e3dc; padding: 20px; margin-bottom: 16px; }
+.obra-cui { font-size: 12px; color: #888; margin-bottom: 4px; }
+.obra-titulo { font-size: 17px; font-weight: 500; line-height: 1.4; margin-bottom: 14px; }
+.obra-meta { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+.meta-label { font-size: 11px; color: #888; margin-bottom: 2px; }
+.meta-value { font-size: 13px; font-weight: 500; }
+.estado-badge { display: inline-block; padding: 3px 10px; border-radius: 10px; font-size: 12px; font-weight: 500; background: #e8f8f0; color: #1a6b3c; }
+.kpi-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 16px; }
+.kpi-mini { background: white; border-radius: 8px; border: 0.5px solid #e5e3dc; padding: 12px; }
+.kpi-mini-label { font-size: 10px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+.kpi-mini-value { font-size: 20px; font-weight: 500; }
+.kpi-mini-sub { font-size: 11px; color: #888; margin-top: 3px; }
+.val-green { color: #1a6b3c; }
+.val-amber { color: #b7770d; }
+.val-blue { color: #1a4f7a; }
+.tabs { display: flex; gap: 2px; margin-bottom: 16px; background: white; border-radius: 10px; border: 0.5px solid #e5e3dc; padding: 6px; overflow-x: auto; }
+.tab { padding: 7px 16px; border-radius: 7px; font-size: 13px; cursor: pointer; color: #666; white-space: nowrap; border: none; background: transparent; }
+.tab.active { background: #1a1f2e; color: white; font-weight: 500; }
+.tab:hover:not(.active) { background: #f5f4f0; }
+.panel { display: none; }
+.panel.active { display: block; }
+.card { background: white; border-radius: 10px; border: 0.5px solid #e5e3dc; padding: 20px; margin-bottom: 14px; }
+.card-title { font-size: 13px; font-weight: 500; margin-bottom: 14px; padding-bottom: 10px; border-bottom: 0.5px solid #f0ede6; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px; }
+.card-badge { font-size: 11px; padding: 2px 8px; border-radius: 8px; font-weight: 400; }
+label { font-size: 12px; color: #666; display: block; margin-bottom: 4px; margin-top: 12px; }
+label:first-child { margin-top: 0; }
+input[type=text], input[type=number], textarea, select { width: 100%; padding: 8px 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 13px; font-family: inherit; color: #1a1a1a; background: white; }
+input:focus, textarea:focus, select:focus { outline: none; border-color: #1a1f2e; }
+textarea { min-height: 80px; resize: vertical; }
+.comp-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.comp-table th { background: #f5f4f0; padding: 8px 10px; text-align: left; font-size: 11px; color: #666; font-weight: 500; border-bottom: 1px solid #e5e3dc; }
+.comp-table td { padding: 8px 10px; border-bottom: 0.5px solid #f0ede6; vertical-align: middle; }
+.comp-table input { border: none; background: #f9f8f5; padding: 4px 8px; border-radius: 4px; width: 80px; text-align: right; font-size: 13px; }
+.bar-sm { width: 80px; background: #eee; border-radius: 3px; height: 4px; display: inline-block; vertical-align: middle; margin-right: 4px; }
+.bar-sm-fill { height: 4px; border-radius: 3px; background: #27ae60; }
+.punto { background: #f9f8f5; border-radius: 8px; padding: 12px; margin-bottom: 8px; border-left: 3px solid #e74c3c; }
+.punto-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.alerta-row { display: flex; align-items: flex-start; gap: 10px; padding: 10px 0; border-bottom: 0.5px solid #f0ede6; }
+.alerta-row:last-child { border-bottom: none; }
+.dot-alerta { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; margin-top: 3px; }
+.dot-rojo { background: #e74c3c; }
+.dot-amber-c { background: #f39c12; }
+.alerta-causa { font-size: 12px; color: #b7770d; margin-top: 2px; }
+.validacion-item { padding: 14px; border-radius: 8px; border: 1px solid #e5e3dc; margin-bottom: 10px; }
+.val-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; flex-wrap: wrap; gap: 6px; }
+.val-titulo { font-size: 13px; font-weight: 500; }
+.val-fecha { font-size: 11px; color: #888; }
+.val-actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+.btn-aprobar { padding: 6px 14px; border-radius: 6px; font-size: 12px; cursor: pointer; background: #e8f8f0; color: #1a6b3c; border: 1px solid #b8deca; font-weight: 500; }
+.btn-observar { padding: 6px 14px; border-radius: 6px; font-size: 12px; cursor: pointer; background: #fef3cd; color: #7d5a00; border: 1px solid #f5d87a; font-weight: 500; }
+.btn-rechazar { padding: 6px 14px; border-radius: 6px; font-size: 12px; cursor: pointer; background: #fde8e8; color: #8b2020; border: 1px solid #f5bebe; font-weight: 500; }
+.aprobado-badge { display: inline-block; padding: 3px 10px; border-radius: 10px; font-size: 11px; background: #e8f8f0; color: #1a6b3c; font-weight: 500; }
+.observado-badge { display: inline-block; padding: 3px 10px; border-radius: 10px; font-size: 11px; background: #fef3cd; color: #7d5a00; font-weight: 500; }
+.readonly-field { background: #f9f8f5; padding: 8px 10px; border-radius: 6px; font-size: 13px; color: #444; border: 1px solid #eee; }
+.save-row { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
+.btn-guardar { padding: 9px 20px; background: #1a1f2e; color: white; border: none; border-radius: 8px; font-size: 13px; cursor: pointer; font-weight: 500; }
+.btn-guardar:hover { background: #2d3550; }
+.btn-cancelar { padding: 9px 20px; background: white; color: #444; border: 1px solid #ddd; border-radius: 8px; font-size: 13px; cursor: pointer; }
+.notif-btn { padding: 10px 20px; background: #1a1f2e; color: white; border: none; border-radius: 8px; font-size: 13px; cursor: pointer; font-weight: 500; width: 100%; margin-top: 12px; }
+.contratista-card { background: #f9f8f5; border-radius: 8px; padding: 14px; margin-bottom: 14px; }
+.contratista-nombre { font-size: 15px; font-weight: 500; margin-bottom: 8px; }
+.contratista-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; }
+.ct-label { font-size: 11px; color: #888; margin-bottom: 2px; }
+.ct-value { font-size: 13px; font-weight: 500; }
+.toast { position: fixed; bottom: 24px; right: 24px; background: #1a1f2e; color: white; padding: 12px 20px; border-radius: 8px; font-size: 13px; display: none; z-index: 100; }
+.toast.show { display: block; }
+
+@media (max-width: 640px) {
+  .main { padding: 12px; }
+  .kpis, .kpi-row { grid-template-columns: repeat(2, 1fr); }
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════ HEADER ═══════════════ -->
+<div class="header">
+  <div class="logo">ExpedienteCheck</div>
+  <div class="header-nav" id="header-nav" onclick="irAMonitor()"></div>
+  <div class="header-user" id="header-user">Municipalidad Provincial de Tacna</div>
+</div>
+
+<div class="role-bar">
+  <span class="role-label">Ver como:</span>
+  <button class="role-btn active-especialista" onclick="setRol('especialista',this)">Especialista de Obra</button>
+  <button class="role-btn" onclick="setRol('residente',this)">Residente de Obra</button>
+  <button class="role-btn" onclick="setRol('supervisor',this)">Supervisor</button>
+</div>
+
+<!-- ═══════════════ MONITOR ═══════════════ -->
+<div id="page-monitor" class="page active">
+<div class="main">
+  <div class="top-row">
+    <div>
+      <h1 class="page-title">Monitor de <strong>Obras en Ejecución</strong></h1>
+      <p class="page-sub" id="ultima-sync">Cargando datos...</p>
+    </div>
+    <button class="sync-btn" onclick="loadData()">⟳ Actualizar datos</button>
+  </div>
+
+  <div class="kpis">
+    <div class="kpi"><div class="kpi-label">Inversiones activas</div><div class="kpi-value" id="kpi-total">—</div><div class="kpi-sub">Con PIM asignado 2026</div></div>
+    <div class="kpi kpi-teal"><div class="kpi-label">PIM total (S/)</div><div class="kpi-value" id="kpi-pim">—</div><div class="kpi-sub">Presupuesto vigente</div></div>
+    <div class="kpi"><div class="kpi-label">Devengado acumulado</div><div class="kpi-value" id="kpi-dev">—</div><div class="kpi-sub" id="kpi-dev-pct">—% del PIM</div></div>
+    <div class="kpi kpi-red"><div class="kpi-label">Alertas rojas</div><div class="kpi-value" id="kpi-rojas">—</div><div class="kpi-sub">Avance físico rezagado</div></div>
+    <div class="kpi kpi-amber"><div class="kpi-label">Alertas amarillas</div><div class="kpi-value" id="kpi-amarillas">—</div><div class="kpi-sub">Requieren atención</div></div>
+  </div>
+
+  <div class="alert-banner" id="alert-banner"></div>
+
+  <div class="filters">
+    <button class="filter-btn active" onclick="filtrar('todas',this)">Todas (<span id="f-todas">0</span>)</button>
+    <button class="filter-btn" onclick="filtrar('rojo',this)">Riesgo alto (<span id="f-rojo">0</span>)</button>
+    <button class="filter-btn" onclick="filtrar('amarillo',this)">Riesgo medio (<span id="f-amarillo">0</span>)</button>
+    <button class="filter-btn" onclick="filtrar('verde',this)">Sin alerta (<span id="f-verde">0</span>)</button>
+  </div>
+
+  <div class="table-card">
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>Obra / Entidad</th><th>CUI</th><th>PIM (S/)</th>
+          <th>Av. Físico</th><th>Av. Financiero</th>
+          <th>Alertas</th><th>Estado</th><th></th>
+        </tr></thead>
+        <tbody id="tbody"><tr><td colspan="8" class="loading">Conectando a Supabase...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+</div><!-- end monitor -->
+
+<!-- ═══════════════ DETALLE ═══════════════ -->
+<div id="page-detalle" class="page">
+<div class="main">
+
+  <div class="obra-header-card">
+    <div class="obra-cui" id="det-cui">CUI —</div>
+    <div class="obra-titulo" id="det-titulo">—</div>
+    <div class="obra-meta">
+      <div><div class="meta-label">Estado</div><div class="meta-value"><span class="estado-badge">En ejecución</span></div></div>
+      <div><div class="meta-label">Modalidad</div><div class="meta-value" id="det-modal">—</div></div>
+      <div><div class="meta-label">Inicio ejecución</div><div class="meta-value" id="det-inicio">—</div></div>
+      <div><div class="meta-label">Fin ejecución</div><div class="meta-value" id="det-fin">—</div></div>
+      <div><div class="meta-label">Costo actualizado</div><div class="meta-value" id="det-costo">—</div></div>
+      <div><div class="meta-label">Monto viable</div><div class="meta-value" id="det-viable">—</div></div>
+    </div>
+  </div>
+
+  <div class="kpi-row">
+    <div class="kpi-mini"><div class="kpi-mini-label">Avance físico</div><div class="kpi-mini-value val-green" id="det-avfis">—%</div><div class="kpi-mini-sub">Registrado SSI</div></div>
+    <div class="kpi-mini"><div class="kpi-mini-label">Avance financiero</div><div class="kpi-mini-value val-blue" id="det-avfin">—%</div><div class="kpi-mini-sub">Dev / PIM vigente</div></div>
+    <div class="kpi-mini"><div class="kpi-mini-label">PIM vigente</div><div class="kpi-mini-value" id="det-pim">—</div><div class="kpi-mini-sub">Presupuesto 2026</div></div>
+    <div class="kpi-mini"><div class="kpi-mini-label">Devengado acum.</div><div class="kpi-mini-value val-green" id="det-dev">—</div><div class="kpi-mini-sub">Acumulado total</div></div>
+    <div class="kpi-mini"><div class="kpi-mini-label">Alertas</div><div class="kpi-mini-value val-amber" id="det-alertas">0</div><div class="kpi-mini-sub">Activas</div></div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('alertas',this)">Alertas activas</button>
+    <button class="tab" onclick="showTab('avance',this)">Avance por componente</button>
+    <button class="tab" onclick="showTab('situacion',this)">Situación actual</button>
+    <button class="tab" onclick="showTab('contratista',this)">Contratista</button>
+    <button class="tab" onclick="showTab('validaciones',this)">Validaciones</button>
+  </div>
+
+  <!-- ALERTAS -->
+  <div id="panel-alertas" class="panel active">
+    <div class="card">
+      <div class="card-title">Alertas detectadas automáticamente</div>
+      <div id="alertas-auto"></div>
+    </div>
+    <div class="card" id="alerta-esp-card">
+      <div class="card-title">Puntos críticos — <span style="color:#1a4f7a">Especialista</span> <span class="card-badge" style="background:#e8f0fe;color:#1a4f7a">Editable</span></div>
+      <div class="punto"><div class="punto-header"><span style="font-size:11px;font-weight:500;color:#b7770d">⚠ Riesgo técnico</span><span style="font-size:11px;color:#888">05/04/2026</span></div><div style="font-size:13px;color:#444">Valorización N°7 pendiente de aprobación. Monto: S/ 85,000.</div></div>
+      <label>Tipo de punto crítico</label>
+      <select><option>Riesgo técnico</option><option>Paralización</option><option>Adicional de obra</option><option>Problema de materiales</option><option>Otro</option></select>
+      <label>Descripción</label>
+      <textarea placeholder="Describe el punto crítico..."></textarea>
+      <div class="save-row"><button class="btn-guardar" onclick="guardar('Punto crítico registrado')">Registrar</button></div>
+    </div>
+    <div class="card" id="alerta-res-card" style="display:none">
+      <div class="card-title">Puntos críticos — <span style="color:#0f6e56">Residente</span> <span class="card-badge" style="background:#e8f8f0;color:#0f6e56">Editable</span></div>
+      <label>Tipo de punto crítico</label>
+      <select><option>Paralización</option><option>Riesgo técnico</option><option>Problema de materiales</option><option>Otro</option></select>
+      <label>Descripción</label>
+      <textarea placeholder="Describe el punto crítico desde el campo..."></textarea>
+      <div class="save-row"><button class="btn-guardar" onclick="guardar('Punto crítico registrado')">Registrar</button></div>
+    </div>
+    <div class="card" id="alerta-sup-card" style="display:none">
+      <div class="card-title">Vista supervisor</div>
+      <div class="readonly-field">Especialista: Valorización N°7 pendiente. Monto: S/ 85,000.</div>
+      <button class="notif-btn" onclick="guardar('Notificación enviada')">📋 Notificar a Gerencia de Obras</button>
+    </div>
+  </div>
+
+  <!-- AVANCE -->
+  <div id="panel-avance" class="panel">
+    <div class="card">
+      <div class="card-title">Avance físico por componente
+        <span id="av-badge-esp" class="card-badge" style="background:#e8f0fe;color:#1a4f7a">Especialista — Editable</span>
+        <span id="av-badge-res" class="card-badge" style="display:none;background:#f5f4f0;color:#666">Solo lectura</span>
+        <span id="av-badge-sup" class="card-badge" style="display:none;background:#f5f4f0;color:#666">Solo lectura</span>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="comp-table">
+          <thead><tr><th>% ET</th><th>Componente</th><th>Avance %</th><th>Monto (S/)</th><th>Falta</th></tr></thead>
+          <tbody>
+            <tr><td>4%</td><td>Trabajos Preliminares</td><td><div class="bar-sm"><div class="bar-sm-fill" style="width:61%"></div></div><input type="number" value="61" min="0" max="100" class="comp-inp"></td><td><input type="number" value="95772" class="comp-inp"></td><td style="color:#888;font-size:12px">39%</td></tr>
+            <tr><td>9%</td><td>SSHH Comida Rápida</td><td><div class="bar-sm"><div class="bar-sm-fill" style="width:96%"></div></div><input type="number" value="96" min="0" max="100" class="comp-inp"></td><td><input type="number" value="25338" class="comp-inp"></td><td style="color:#888;font-size:12px">4%</td></tr>
+            <tr><td>6%</td><td>Módulos Vinos y Piscos</td><td><div class="bar-sm"><div class="bar-sm-fill" style="width:100%"></div></div><input type="number" value="100" min="0" max="100" class="comp-inp"></td><td><input type="number" value="1553" class="comp-inp"></td><td style="color:#888;font-size:12px">0%</td></tr>
+            <tr><td>26%</td><td>Zona de Artesanía</td><td><div class="bar-sm"><div class="bar-sm-fill" style="width:100%"></div></div><input type="number" value="100" min="0" max="100" class="comp-inp"></td><td><input type="number" value="0" class="comp-inp"></td><td style="color:#888;font-size:12px">0%</td></tr>
+            <tr><td>19%</td><td>Instalaciones Eléctricas</td><td><div class="bar-sm"><div class="bar-sm-fill" style="width:63%"></div></div><input type="number" value="63" min="0" max="100" class="comp-inp"></td><td><input type="number" value="456345" class="comp-inp"></td><td style="color:#888;font-size:12px">37%</td></tr>
+            <tr><td>25%</td><td>Red de Agua y Desagüe</td><td><div class="bar-sm"><div class="bar-sm-fill" style="width:73%"></div></div><input type="number" value="73" min="0" max="100" class="comp-inp"></td><td><input type="number" value="451625" class="comp-inp"></td><td style="color:#888;font-size:12px">27%</td></tr>
+            <tr><td>6%</td><td>Tanque Cisterna</td><td><div class="bar-sm"><div class="bar-sm-fill" style="width:85%"></div></div><input type="number" value="85" min="0" max="100" class="comp-inp"></td><td><input type="number" value="59640" class="comp-inp"></td><td style="color:#888;font-size:12px">15%</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div id="av-save" class="save-row"><button class="btn-cancelar">Cancelar</button><button class="btn-guardar" onclick="guardar('Avance guardado')">Guardar avance</button></div>
+      <div id="av-readonly" style="display:none;margin-top:10px;font-size:12px;color:#888">Solo el Especialista puede editar el avance.</div>
+    </div>
+  </div>
+
+  <!-- SITUACIÓN -->
+  <div id="panel-situacion" class="panel">
+    <div class="card" id="sit-res-edit">
+      <div class="card-title">Situación actual — <span style="color:#0f6e56">Residente</span> <span class="card-badge" style="background:#e8f8f0;color:#0f6e56">Editable</span></div>
+      <label>Descripción de situación actual</label>
+      <textarea>Se emitió la Modificación N° 05 - Ampliación de plazo N° 03, vigente mediante Resolución GM N° 075-2026, por un plazo de 69 días hábiles.</textarea>
+      <label>Residente de obra</label><input type="text" value="Ing. Jean Marco Leonel Labra">
+      <label>Inspector de obra</label><input type="text" value="Ing. Tulio Francisco Molina Zeballos">
+      <label>¿Hay modificación de plazo?</label>
+      <select><option>No</option><option selected>Sí — Ampliación</option></select>
+      <label>Detalle de modificación</label>
+      <textarea>Ampliación de plazo N°03 por 69 días hábiles. Nueva fecha de término: 02/04/2026.</textarea>
+      <div class="save-row"><button class="btn-cancelar">Cancelar</button><button class="btn-guardar" onclick="guardar('Situación guardada')">Guardar</button></div>
+    </div>
+    <div class="card" id="sit-readonly" style="display:none">
+      <div class="card-title">Situación actual — Registrado por Residente <span class="aprobado-badge">Aprobado</span></div>
+      <div class="readonly-field">Se emitió la Modificación N° 05 - Ampliación de plazo N° 03, vigente por Resolución GM N° 075-2026, por 69 días hábiles.</div>
+      <div style="margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div><div style="font-size:11px;color:#888;margin-bottom:2px">Residente</div><div style="font-size:13px">Ing. Jean Marco Leonel Labra</div></div>
+        <div><div style="font-size:11px;color:#888;margin-bottom:2px">Inspector</div><div style="font-size:13px">Ing. Tulio Francisco Molina Zeballos</div></div>
+      </div>
+    </div>
+    <div class="card" id="sit-sup-val" style="display:none">
+      <div class="card-title">Validar situación — <span style="color:#7d3a00">Supervisor</span></div>
+      <div class="readonly-field" style="margin-bottom:12px">Ampliación de plazo N°03 por 69 días. Nueva fecha: 02/04/2026.</div>
+      <label>Observación (opcional)</label>
+      <textarea placeholder="Agrega una observación si es necesario..."></textarea>
+      <div class="save-row">
+        <button class="btn-rechazar" onclick="guardar('Situación observada')">Observar</button>
+        <button class="btn-aprobar" onclick="guardar('Situación aprobada ✓')">Aprobar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONTRATISTA -->
+  <div id="panel-contratista" class="panel">
+    <div class="card">
+      <div class="card-title">Datos del contratista / ejecutor</div>
+      <div class="contratista-card">
+        <div class="contratista-nombre" id="cont-nombre">—</div>
+        <div class="contratista-grid">
+          <div><div class="ct-label">Modalidad</div><div class="ct-value" id="cont-modal">—</div></div>
+          <div><div class="ct-label">Score cumplimiento</div><div class="ct-value" style="color:#1a6b3c">★★★★☆ 4.1</div></div>
+        </div>
+      </div>
+      <div id="cont-edit">
+        <label>Razón social / ejecutor</label><input type="text" id="cont-input" placeholder="Nombre del contratista">
+        <label>RUC</label><input type="text" placeholder="RUC">
+        <label>Representante legal</label><input type="text" placeholder="Nombre del representante">
+        <label>Observaciones de desempeño</label><textarea placeholder="Notas sobre el desempeño en esta obra..."></textarea>
+        <div class="save-row"><button class="btn-guardar" onclick="guardar('Contratista actualizado')">Guardar</button></div>
+      </div>
+      <div id="cont-ro" style="display:none;font-size:12px;color:#888;margin-top:8px">Solo Especialista o Residente pueden editar.</div>
+    </div>
+  </div>
+
+  <!-- VALIDACIONES -->
+  <div id="panel-validaciones" class="panel">
+    <div class="card">
+      <div class="card-title">Historial de validaciones</div>
+      <div class="validacion-item">
+        <div class="val-header"><div class="val-titulo">Avance por componente — Semana 02 Abril</div><span class="aprobado-badge">Aprobado</span></div>
+        <div class="val-fecha">Especialista · 05/04/2026 · Validado por Supervisor · 06/04/2026</div>
+        <div style="font-size:13px;color:#444;margin-top:6px">Avance físico global: 81.76%. Sin observaciones.</div>
+      </div>
+      <div class="validacion-item">
+        <div class="val-header"><div class="val-titulo">Situación actual — Marzo 2026</div><span class="observado-badge">Observado</span></div>
+        <div class="val-fecha">Residente · 31/03/2026 · Observado por Supervisor · 01/04/2026</div>
+        <div style="font-size:13px;color:#444;margin-top:6px">Supervisor observa: Falta adjuntar resolución de ampliación escaneada.</div>
+      </div>
+      <div id="val-pendientes" style="display:none">
+        <div style="font-size:12px;font-weight:500;color:#7d3a00;margin:16px 0 8px">Pendientes de validación</div>
+        <div class="validacion-item" style="border-color:#f5ccc0">
+          <div class="val-header"><div class="val-titulo">Punto crítico — Valorización N°7</div><span style="font-size:11px;color:#888">05/04/2026</span></div>
+          <div style="font-size:13px;color:#444">Especialista: Valorización N°7 pendiente. Monto: S/ 85,000.</div>
+          <div class="val-actions">
+            <button class="btn-rechazar" onclick="guardar('Rechazado')">Rechazar</button>
+            <button class="btn-observar" onclick="guardar('Observado')">Observar</button>
+            <button class="btn-aprobar" onclick="guardar('Aprobado ✓')">Aprobar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</div><!-- end detalle -->
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SB_URL = 'https://xrbyvwliffdvfdmshaix.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhyYnl2d2xpZmZkdmZkbXNoYWl4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4NTMwMzAsImV4cCI6MjA5MTQyOTAzMH0.IaoSfrjeD2C_cZbQI7BWRjKZo8iyPLrD5q6qfqHewd8';
+
+let allData = [];
+let filtroActual = 'todas';
+let rolActual = 'especialista';
+let obraActual = null;
+
+function fmt(n) {
+  if (!n) return '—';
+  const m = n/1000000;
+  if (m >= 1) return 'S/ ' + m.toFixed(1) + 'M';
+  const k = n/1000;
+  if (k >= 1) return 'S/ ' + Math.round(k) + 'K';
+  return 'S/ ' + Math.round(n);
+}
+
+function getAlerta(avFis, avFin) {
+  if (avFis === null || avFis === undefined) return 'amarillo';
+  const diff = avFin - avFis;
+  if (diff > 20) return 'rojo';
+  if (diff > 10) return 'amarillo';
+  return 'verde';
+}
+
+function renderBar(pct, color) {
+  const p = Math.min(100, Math.max(0, pct||0));
+  const cls = color==='rojo'?'bar-red':color==='amarillo'?'bar-amber':'bar-green';
+  return `<div class="bar-wrap"><div class="bar-fill ${cls}" style="width:${p}%"></div></div>${Math.round(p)}%`;
+}
+
+function setRol(rol, btn) {
+  rolActual = rol;
+  document.querySelectorAll('.role-btn').forEach(b => b.className = 'role-btn');
+  btn.className = 'role-btn active-' + rol;
+  document.getElementById('header-user').textContent =
+    rol==='especialista' ? 'Especialista de Obra' :
+    rol==='residente' ? 'Residente de Obra' : 'Supervisor';
+  if (obraActual) aplicarRolDetalle();
+}
+
+function aplicarRolDetalle() {
+  const esp = rolActual==='especialista', res = rolActual==='residente', sup = rolActual==='supervisor';
+  // Alertas
+  document.getElementById('alerta-esp-card').style.display = esp?'':'none';
+  document.getElementById('alerta-res-card').style.display = res?'':'none';
+  document.getElementById('alerta-sup-card').style.display = sup?'':'none';
+  // Avance
+  document.getElementById('av-badge-esp').style.display = esp?'':'none';
+  document.getElementById('av-badge-res').style.display = res?'':'none';
+  document.getElementById('av-badge-sup').style.display = sup?'':'none';
+  document.getElementById('av-save').style.display = esp?'':'none';
+  document.getElementById('av-readonly').style.display = esp?'none':'';
+  document.querySelectorAll('.comp-inp').forEach(i => i.disabled = !esp);
+  // Situación
+  document.getElementById('sit-res-edit').style.display = res?'':'none';
+  document.getElementById('sit-readonly').style.display = esp?'':'none';
+  document.getElementById('sit-sup-val').style.display = sup?'':'none';
+  // Contratista
+  document.getElementById('cont-edit').style.display = (esp||res)?'':'none';
+  document.getElementById('cont-ro').style.display = sup?'':'none';
+  // Validaciones
+  document.getElementById('val-pendientes').style.display = sup?'':'none';
+}
+
+function irADetalle(d) {
+  obraActual = d;
+  const avFin = d.pim_ano_vigente > 0 ? (d.dev_ano_vigente/d.pim_ano_vigente*100) : 0;
+  const nAlertas = d._alerta === 'verde' ? 0 : d._alerta === 'amarillo' ? 1 : 2;
+
+  document.getElementById('det-cui').textContent = 'CUI ' + d.codigo_unico + ' · ' + (d.entidad||'MPT');
+  document.getElementById('det-titulo').textContent = d.nombre_inversion || '—';
+  document.getElementById('det-modal').textContent = d.modalidad_ejecucion || '—';
+  document.getElementById('det-inicio').textContent = d.fecha_inicio_ejecucion || '—';
+  document.getElementById('det-fin').textContent = d.fecha_fin_ejecucion || '—';
+  document.getElementById('det-costo').textContent = fmt(d.costo_actualizado);
+  document.getElementById('det-viable').textContent = fmt(d.mto_viable);
+  document.getElementById('det-avfis').textContent = (d.avance_fisico||0).toFixed(1) + '%';
+  document.getElementById('det-avfin').textContent = avFin.toFixed(1) + '%';
+  document.getElementById('det-pim').textContent = fmt(d.pim_ano_vigente);
+  document.getElementById('det-dev').textContent = fmt(d.dev_ano_vigente);
+  document.getElementById('det-alertas').textContent = nAlertas;
+  document.getElementById('cont-nombre').textContent = d.des_unidad_uei || 'No registrado';
+  document.getElementById('cont-modal').textContent = d.modalidad_ejecucion || '—';
+  document.getElementById('cont-input').value = d.des_unidad_uei || '';
+
+  const alertasDiv = document.getElementById('alertas-auto');
+  const alertas = [];
+  if (d._alerta === 'rojo') alertas.push({col:'dot-rojo', txt:'Avance financiero (' + avFin.toFixed(0) + '%) muy por encima del físico (' + (d.avance_fisico||0).toFixed(0) + '%)', causa:'Brecha de ' + (avFin - (d.avance_fisico||0)).toFixed(0) + ' puntos porcentuales. Revisar valorización.'});
+  if (d._alerta === 'amarillo') alertas.push({col:'dot-amber-c', txt:'Avance financiero (' + avFin.toFixed(0) + '%) supera al físico (' + (d.avance_fisico||0).toFixed(0) + '%)', causa:'Brecha de ' + (avFin - (d.avance_fisico||0)).toFixed(0) + ' puntos. Se recomienda seguimiento.'});
+  if (!alertas.length) alertas.push({col:'', txt:'Sin alertas automáticas detectadas', causa:'El avance físico y financiero están alineados.'});
+  alertasDiv.innerHTML = alertas.map(a => `<div class="alerta-row"><div class="dot-alerta ${a.col}" style="${!a.col?'background:#27ae60':''}"></div><div><div>${a.txt}</div><div class="alerta-causa">${a.causa}</div></div></div>`).join('');
+
+  showPage('detalle');
+  aplicarRolDetalle();
+  showTab('alertas', document.querySelector('.tabs .tab'));
+  document.getElementById('header-nav').textContent = '← Volver al monitor';
+}
+
+function irAMonitor() {
+  obraActual = null;
+  showPage('monitor');
+  document.getElementById('header-nav').textContent = '';
+}
+
+function showPage(p) {
+  document.querySelectorAll('.page').forEach(el => el.classList.remove('active'));
+  document.getElementById('page-' + p).classList.add('active');
+}
+
+function showTab(tab, btn) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('panel-' + tab).classList.add('active');
+  if (btn) btn.classList.add('active');
+}
+
+function filtrar(tipo, btn) {
+  filtroActual = tipo;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderTabla();
+}
+
+function renderTabla() {
+  const datos = filtroActual==='todas' ? allData : allData.filter(d => d._alerta===filtroActual);
+  const tbody = document.getElementById('tbody');
+  if (!datos.length) { tbody.innerHTML='<tr><td colspan="8" class="loading">Sin proyectos para este filtro</td></tr>'; return; }
+  tbody.innerHTML = datos.map((d,i) => {
+    const avFis = d.avance_fisico||0;
+    const avFin = d.pim_ano_vigente>0 ? (d.dev_ano_vigente/d.pim_ano_vigente*100) : 0;
+    const alertas = d._alerta==='rojo' ? '<span class="badge badge-red">Avance rezagado</span>' : d._alerta==='amarillo' ? '<span class="badge badge-amber">Atención requerida</span>' : '<span class="badge badge-green">Sin alertas</span>';
+    const dotCls = d._alerta==='rojo'?'dot-red':d._alerta==='amarillo'?'dot-amber':'dot-green';
+    const estCls = d._alerta==='rojo'?'estado-red':d._alerta==='amarillo'?'estado-amber':'estado-green';
+    const estLabel = d._alerta==='rojo'?'Riesgo alto':d._alerta==='amarillo'?'Riesgo medio':'Sin alerta';
+    const nombre = (d.nombre_inversion||'—');
+    const corto = nombre.length>65 ? nombre.substring(0,65)+'...' : nombre;
+    return `<tr>
+      <td><div class="obra-name">${corto}</div><div class="obra-entidad">${d.entidad||'MPT'} · ${d.modalidad_ejecucion||'—'}</div></td>
+      <td style="color:#666">${d.codigo_unico}</td>
+      <td>${fmt(d.pim_ano_vigente)}</td>
+      <td>${renderBar(avFis, d._alerta)}</td>
+      <td>${renderBar(avFin, d._alerta)}</td>
+      <td>${alertas}</td>
+      <td><span class="estado ${estCls}"><span class="dot ${dotCls}"></span>${estLabel}</span></td>
+      <td><button class="ver-btn" onclick="irADetalle(allData[${i}])">Ver detalle</button></td>
+    </tr>`;
+  }).join('');
+}
+
+function guardar(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = '✓ ' + msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+async function loadData() {
+  document.getElementById('tbody').innerHTML = '<tr><td colspan="8" class="loading">Cargando desde Supabase...</td></tr>';
+  try {
+    const res = await fetch(`${SB_URL}/rest/v1/ssi_inversiones?select=*&order=pim_ano_vigente.desc`, {
+      headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY }
+    });
+    const data = await res.json();
+    allData = data.filter(d => d.pim_ano_vigente > 0).map(d => {
+      const avFin = d.pim_ano_vigente>0 ? (d.dev_ano_vigente/d.pim_ano_vigente*100) : 0;
+      return { ...d, _alerta: getAlerta(d.avance_fisico, avFin) };
+    });
+    const rojas = allData.filter(d => d._alerta==='rojo').length;
+    const amarillas = allData.filter(d => d._alerta==='amarillo').length;
+    const verdes = allData.filter(d => d._alerta==='verde').length;
+    const pim = allData.reduce((s,d) => s+(d.pim_ano_vigente||0), 0);
+    const dev = allData.reduce((s,d) => s+(d.dev_ano_vigente||0), 0);
+    const pct = pim>0 ? (dev/pim*100).toFixed(1) : 0;
+    document.getElementById('kpi-total').textContent = allData.length;
+    document.getElementById('kpi-pim').textContent = fmt(pim);
+    document.getElementById('kpi-dev').textContent = fmt(dev);
+    document.getElementById('kpi-dev-pct').textContent = pct + '% del PIM';
+    document.getElementById('kpi-rojas').textContent = rojas;
+    document.getElementById('kpi-amarillas').textContent = amarillas;
+    document.getElementById('f-todas').textContent = allData.length;
+    document.getElementById('f-rojo').textContent = rojas;
+    document.getElementById('f-amarillo').textContent = amarillas;
+    document.getElementById('f-verde').textContent = verdes;
+    document.getElementById('ultima-sync').textContent = 'Datos desde SSI — MEF · ' + new Date().toLocaleDateString('es-PE',{day:'2-digit',month:'long',year:'numeric'});
+    if (rojas > 0) {
+      const b = document.getElementById('alert-banner');
+      b.style.display = 'block';
+      b.innerHTML = `⚠ <strong>${rojas} obra(s) con riesgo alto.</strong> Avance financiero supera al físico en más de 20 puntos.`;
+    }
+    renderTabla();
+  } catch(e) {
+    document.getElementById('tbody').innerHTML = `<tr><td colspan="8" class="loading">Error: ${e.message}</td></tr>`;
+  }
+}
+
+loadData();
+</script>
+</body>
+</html>
