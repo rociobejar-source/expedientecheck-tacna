@@ -180,10 +180,10 @@ textarea { min-height: 80px; resize: vertical; }
   </div>
 
   <div class="kpis">
-    <div class="kpi"><div class="kpi-label">Inversiones activas</div><div class="kpi-value" id="kpi-total">—</div><div class="kpi-sub">Con PIM asignado 2026</div></div>
-    <div class="kpi kpi-teal"><div class="kpi-label">PIM total (S/)</div><div class="kpi-value" id="kpi-pim">—</div><div class="kpi-sub">Presupuesto vigente</div></div>
-    <div class="kpi"><div class="kpi-label">Devengado acumulado</div><div class="kpi-value" id="kpi-dev">—</div><div class="kpi-sub" id="kpi-dev-pct">—% del PIM</div></div>
-    <div class="kpi kpi-red"><div class="kpi-label">Alertas rojas</div><div class="kpi-value" id="kpi-rojas">—</div><div class="kpi-sub">Avance físico rezagado</div></div>
+    <div class="kpi"><div class="kpi-label">Inversiones con PIM 2026</div><div class="kpi-value" id="kpi-total">—</div><div class="kpi-sub">Con PIM asignado 2026 > 0</div></div>
+    <div class="kpi kpi-teal"><div class="kpi-label">PIM 2026 (S/)</div><div class="kpi-value" id="kpi-pim">—</div><div class="kpi-sub">Presupuesto vigente 2026</div></div>
+    <div class="kpi"><div class="kpi-label">Devengado 2026 (S/)</div><div class="kpi-value" id="kpi-dev">—</div><div class="kpi-sub" id="kpi-dev-pct">—% del PIM 2026</div></div>
+    <div class="kpi kpi-red"><div class="kpi-label">Alertas rojas</div><div class="kpi-value" id="kpi-rojas">—</div><div class="kpi-sub">Brecha físico-financiero >20%</div></div>
     <div class="kpi kpi-amber"><div class="kpi-label">Alertas amarillas</div><div class="kpi-value" id="kpi-amarillas">—</div><div class="kpi-sub">Requieren atención</div></div>
   </div>
 
@@ -202,15 +202,17 @@ textarea { min-height: 80px; resize: vertical; }
         <thead><tr>
           <th>Obra / Entidad</th>
           <th>CUI</th>
-          <th style="white-space:nowrap">Av. Físico F12B</th>
+          <th style="white-space:nowrap">Costo proyecto (S/)</th>
+          <th style="white-space:nowrap">Av. Físico Acum.</th>
           <th style="white-space:nowrap">Av. Financiero Acum.</th>
-          <th style="white-space:nowrap">Dev. 2026 / PIM 2026</th>
+          <th style="white-space:nowrap">PIM 2026 (S/)</th>
           <th style="white-space:nowrap">Dev. 2026 (S/)</th>
+          <th style="white-space:nowrap">Av. 2026 %</th>
           <th>Alertas</th>
           <th>Estado</th>
           <th></th>
         </tr></thead>
-        <tbody id="tbody"><tr><td colspan="9" class="loading">Conectando a Supabase...</td></tr></tbody>
+        <tbody id="tbody"><tr><td colspan="11" class="loading">Conectando a Supabase...</td></tr></tbody>
       </table>
     </div>
   </div>
@@ -568,7 +570,7 @@ function filtrar(tipo, btn) {
 function renderTabla() {
   const datos = filtroActual==='todas' ? allData : allData.filter(d => d._alerta===filtroActual);
   const tbody = document.getElementById('tbody');
-  if (!datos.length) { tbody.innerHTML='<tr><td colspan="9" class="loading">Sin proyectos para este filtro</td></tr>'; return; }
+  if (!datos.length) { tbody.innerHTML='<tr><td colspan="11" class="loading">Sin proyectos para este filtro</td></tr>'; return; }
   tbody.innerHTML = datos.map((d,i) => {
     const tieneF12b = d.tiene_f12b === 'SI';
     const dias = diasDesdeActualizacion ? diasDesdeActualizacion(d.fecha_registro) : null;
@@ -597,10 +599,12 @@ function renderTabla() {
     return `<tr>
       <td><div class="obra-name">${corto}${f12bBadge}</div><div class="obra-entidad">${d.entidad||'MPT'} · ${d.modalidad_ejecucion||'—'}</div></td>
       <td style="color:#666;font-size:12px">${d.codigo_unico}</td>
+      <td style="font-size:13px;color:#444">${d._costo > 0 ? fmt(d._costo) : '—'}</td>
       <td>${renderBar(d._avFis, d._alerta)}</td>
       <td>${barFinAcum}</td>
-      <td style="font-size:13px;font-weight:500;color:${d._pim>0?'#1a4f7a':'#888'}">${dev2026Pct}</td>
+      <td style="font-size:13px;color:#1a4f7a;font-weight:500">${d._pim > 0 ? fmt(d._pim) : '—'}</td>
       <td style="font-size:13px;color:#1a6b3c">${dev2026Sol}</td>
+      <td style="font-size:13px;font-weight:500;color:${d._pim>0?'#1a4f7a':'#888'}">${dev2026Pct}</td>
       <td>${alertaLabel}</td>
       <td><span class="estado ${estCls}"><span class="dot ${dotCls}"></span>${estLabel}</span></td>
       <td><button class="ver-btn" onclick="irADetalle(allData[${i}])">Ver</button></td>
@@ -642,13 +646,14 @@ async function loadData() {
                _avFis: avFis, _avFinAcum: avFinAcum, _avFin2026: avFin2026,
                _brecha: brecha, _alerta: alerta };
     });
+    const conPim = allData.filter(d => d._pim > 0);
     const rojas = allData.filter(d => d._alerta==='rojo').length;
     const amarillas = allData.filter(d => d._alerta==='amarillo').length;
     const verdes = allData.filter(d => d._alerta==='verde').length;
-    const pimTotal = allData.reduce((s,d) => s+(d._pim||0), 0);
-    const dev2026Total = allData.reduce((s,d) => s+(d._dev2026||0), 0);
+    const pimTotal = conPim.reduce((s,d) => s+(d._pim||0), 0);
+    const dev2026Total = conPim.reduce((s,d) => s+(d._dev2026||0), 0);
     const pct = pimTotal>0 ? (dev2026Total/pimTotal*100).toFixed(1) : 0;
-    document.getElementById('kpi-total').textContent = allData.length;
+    document.getElementById('kpi-total').textContent = conPim.length;
     document.getElementById('kpi-pim').textContent = fmt(pimTotal);
     document.getElementById('kpi-dev').textContent = fmt(dev2026Total);
     document.getElementById('kpi-dev-pct').textContent = pct + '% del PIM 2026';
