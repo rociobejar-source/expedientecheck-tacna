@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ExpedienteCheck · Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:        #f0ede6;
+      --surface:   #faf9f6;
+      --header:    #0f0f0f;
+      --border:    #e0ddd6;
+      --text:      #1a1a1a;
+      --muted:     #7a7570;
+      --accent:    #2a7d4f;
+      --accent-lt: #e8f5ee;
+      --rojo:      #c0392b;
+      --rojo-lt:   #fdf0ee;
+      --sans:      'DM Sans', sans-serif;
+      --mono:      'DM Mono', monospace;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 14px; min-height: 100vh; }
+
+    /* ── HEADER ── */
+    header {
+      background: var(--header);
+      height: 52px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      position: sticky; top: 0; z-index: 50;
+    }
+    .logo { color: #ffffff; font-weight: 700; font-size: 15px; letter-spacing: -0.3px; }
+    .header-right { display: flex; align-items: center; gap: 16px; color: #9ca3af; font-size: 13px; }
+    .btn-logout {
+      background: transparent;
+      border: 1px solid #4b5563;
+      border-radius: 4px;
+      color: #9ca3af;
+      padding: 5px 12px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-logout:hover { border-color: #fff; color: #fff; }
+
+    /* ── MAIN ── */
+    main { padding: 28px 24px; max-width: 1200px; margin: 0 auto; }
+    .page-header { margin-bottom: 28px; }
+    .page-title { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; }
+    .page-subtitle { font-size: 13px; color: var(--muted); margin-top: 3px; }
+
+    .btn-nuevo {
+      background: var(--accent);
+      border: none;
+      border-radius: 6px;
+      color: white;
+      font-family: var(--sans);
+      font-size: 13px;
+      font-weight: 600;
+      padding: 9px 16px;
+      cursor: pointer;
+      transition: opacity 0.2s;
+      margin-top: 16px;
+    }
+    .btn-nuevo:hover { opacity: 0.9; }
+
+    /* ── TABLE ── */
+    .table-wrap {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      overflow-x: auto;
+      margin-top: 20px;
+    }
+    table { width: 100%; border-collapse: collapse; min-width: 900px; }
+    thead th {
+      background: var(--header);
+      color: #9ca3af;
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      padding: 11px 14px;
+      text-align: left;
+      white-space: nowrap;
+    }
+    tbody tr { border-bottom: 1px solid var(--border); transition: background 0.1s; }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: #f5f3ee; }
+    tbody td { padding: 13px 14px; font-size: 13px; vertical-align: middle; }
+
+    .user-email { font-weight: 600; font-family: var(--mono); font-size: 12px; color: var(--muted); }
+    .user-name { color: var(--text); }
+    .user-rol { display: inline-block; background: var(--accent-lt); color: var(--accent); font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 4px; }
+    .user-rol.supervisor { background: #fff3cd; color: #856404; }
+    .user-rol.especialista { background: #d1ecf1; color: #0c5460; }
+
+    .btn-editar, .btn-eliminar {
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 5px 10px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-right: 6px;
+    }
+    .btn-editar:hover { border-color: var(--accent); color: var(--accent); }
+    .btn-eliminar:hover { border-color: var(--rojo); color: var(--rojo); }
+
+    /* ── MODAL ── */
+    .overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+    .overlay.open { display: flex; }
+
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 28px;
+      max-width: 500px;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+      position: relative;
+    }
+
+    .modal-close {
+      position: absolute;
+      top: 16px; right: 16px;
+      background: transparent;
+      border: none;
+      font-size: 20px;
+      cursor: pointer;
+      color: var(--muted);
+    }
+
+    .modal-title { font-size: 20px; font-weight: 700; margin-bottom: 20px; }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+    .form-label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+    .form-input, .form-select {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 10px 12px;
+      font-family: var(--sans);
+      font-size: 14px;
+      color: var(--text);
+      background: white;
+    }
+    .form-input:focus, .form-select:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-lt);
+    }
+
+    .form-input-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      padding: 8px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      min-height: 38px;
+      align-items: center;
+    }
+    .tag {
+      background: var(--accent-lt);
+      color: var(--accent);
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .tag button {
+      background: none;
+      border: none;
+      color: var(--accent);
+      cursor: pointer;
+      font-weight: bold;
+      padding: 0;
+    }
+    .form-input-tags input {
+      flex: 1;
+      border: none;
+      outline: none;
+      font-family: var(--sans);
+      font-size: 14px;
+      min-width: 100px;
+    }
+
+    .btn-save, .btn-cancel {
+      width: 100%;
+      border: none;
+      border-radius: 6px;
+      padding: 11px 16px;
+      font-family: var(--sans);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 8px;
+      transition: opacity 0.2s;
+    }
+    .btn-save {
+      background: var(--accent);
+      color: white;
+    }
+    .btn-save:hover { opacity: 0.9; }
+    .btn-cancel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+    }
+    .btn-cancel:hover { background: #f5f3ee; }
+
+    .error-msg {
+      background: var(--rojo-lt);
+      border: 1px solid #f5c6c2;
+      border-radius: 6px;
+      padding: 10px 12px;
+      font-size: 13px;
+      color: var(--rojo);
+      margin-bottom: 16px;
+      display: none;
+    }
+    .error-msg.show { display: block; }
+
+    .loading { text-align: center; padding: 20px; color: var(--muted); }
+
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--muted);
+    }
+    .empty-state p { font-size: 14px; margin-bottom: 16px; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="logo">ExpedienteCheck</div>
+    <div class="header-right">
+      <span id="user-email"></span>
+      <button class="btn-logout" id="btn-logout">Cerrar sesión</button>
+    </div>
+  </header>
+
+  <main>
+    <div class="page-header">
+      <h1 class="page-title">Panel <span style="font-weight:300;">de Administración</span></h1>
+      <p class="page-subtitle">Gestión de usuarios y asignación de CUIs</p>
+    </div>
+
+    <button class="btn-nuevo" id="btn-new-user">+ Crear usuario</button>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Usuario</th>
+            <th>Email</th>
+            <th>Rol</th>
+            <th>CUIs asignados</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="tbody">
+          <tr><td colspan="5" style="text-align:center;padding:40px;color:var(--muted);">Cargando...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </main>
+
+  <!-- MODAL: Crear/Editar Usuario -->
+  <div class="overlay" id="overlay">
+    <div class="modal">
+      <button class="modal-close" id="modal-close">✕</button>
+      <h2 class="modal-title" id="modal-title">Crear usuario</h2>
+
+      <div class="error-msg" id="error-msg"></div>
+
+      <form id="form-user">
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <input type="email" id="inp-email" class="form-input" placeholder="usuario@mpt.gob.pe" required/>
+        </div>
+
+        <div class="form-group" id="password-group">
+          <label class="form-label">Contraseña</label>
+          <input type="password" id="inp-password" class="form-input" placeholder="••••••••" required/>
+          <p style="font-size:11px;color:var(--muted);margin-top:4px;">Mínimo 6 caracteres</p>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Nombre completo</label>
+          <input type="text" id="inp-name" class="form-input" placeholder="Juan Pérez"/>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Rol</label>
+          <select id="inp-rol" class="form-select" required>
+            <option value="especialista">Especialista</option>
+            <option value="residente">Residente</option>
+            <option value="supervisor">Supervisor</option>
+            <option value="admin">Administrador</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">CUIs asignados</label>
+          <div class="form-input-tags" id="cuis-container">
+            <input id="inp-cui" type="text" placeholder="Ingresa CUI y presiona Enter" pattern="\d{7}"/>
+          </div>
+          <p style="font-size:11px;color:var(--muted);margin-top:4px;">CUIs de 7 dígitos (ej: 2677250)</p>
+        </div>
+
+        <button type="submit" class="btn-save" id="btn-save">Guardar usuario</button>
+        <button type="button" class="btn-cancel" id="btn-cancel">Cancelar</button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const API = 'https://api.expedientecheck.com';
+
+    let token = localStorage.getItem('expediente_token');
+    let userMeta = JSON.parse(localStorage.getItem('expediente_user') || '{}');
+    let usuarioActual = null;
+    let cuisAsignados = [];
+
+    // Verificar autenticación y rol
+    if (!token) {
+      window.location.href = 'login.html';
+    }
+    if (userMeta.rol !== 'admin') {
+      alert('Solo administradores pueden acceder aquí');
+      window.location.href = 'index.html';
+    }
+
+    document.getElementById('user-email').textContent = userMeta.email;
+    document.getElementById('btn-logout').addEventListener('click', () => {
+      localStorage.removeItem('expediente_token');
+      localStorage.removeItem('expediente_user');
+      window.location.href = 'login.html';
+    });
+
+    // Cargar usuarios
+    async function cargarUsuarios() {
+      try {
+        const res = await fetch(`${API}/api/admin/users`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+
+        const tbody = document.getElementById('tbody');
+        if (!data.users || data.users.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="5"><div class="empty-state"><p>Sin usuarios registrados</p></div></td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = data.users.map(u => `
+          <tr>
+            <td><div class="user-name">${u.full_name || 'Sin nombre'}</div></td>
+            <td><div class="user-email">${u.email}</div></td>
+            <td><span class="user-rol ${u.rol}">${u.rol}</span></td>
+            <td style="font-family:var(--mono);font-size:11px;color:var(--muted);">
+              ${u.cuis_asignados && u.cuis_asignados.length > 0 ? u.cuis_asignados.join(', ') : '-'}
+            </td>
+            <td>
+              <button class="btn-editar" data-id="${u.id}" data-email="${u.email}">Editar</button>
+              <button class="btn-eliminar" data-id="${u.id}">Eliminar</button>
+            </td>
+          </tr>
+        `).join('');
+
+        // Event listeners para botones
+        document.querySelectorAll('.btn-editar').forEach(btn => {
+          btn.addEventListener('click', () => abrirModalEditar(btn.dataset.id, btn.dataset.email));
+        });
+        document.querySelectorAll('.btn-eliminar').forEach(btn => {
+          btn.addEventListener('click', () => {
+            if (confirm('¿Estás seguro que quieres eliminar este usuario?')) {
+              eliminarUsuario(btn.dataset.id);
+            }
+          });
+        });
+      } catch(err) {
+        document.getElementById('tbody').innerHTML = `<tr><td colspan="5"><div class="empty-state"><p>Error: ${err.message}</p></div></td></tr>`;
+      }
+    }
+
+    // Modal
+    const overlay = document.getElementById('overlay');
+    const form = document.getElementById('form-user');
+    const modalTitle = document.getElementById('modal-title');
+    const passwordGroup = document.getElementById('password-group');
+    const inpEmail = document.getElementById('inp-email');
+    const inpPassword = document.getElementById('inp-password');
+    const inpName = document.getElementById('inp-name');
+    const inpRol = document.getElementById('inp-rol');
+    const inpCui = document.getElementById('inp-cui');
+    const cuisContainer = document.getElementById('cuis-container');
+    const errorMsg = document.getElementById('error-msg');
+
+    // Abrir modal (crear)
+    document.getElementById('btn-new-user').addEventListener('click', () => {
+      usuarioActual = null;
+      cuisAsignados = [];
+      modalTitle.textContent = 'Crear usuario';
+      passwordGroup.style.display = 'block';
+      inpEmail.value = '';
+      inpPassword.value = '';
+      inpName.value = '';
+      inpRol.value = 'especialista';
+      renderCuisContainer();
+      errorMsg.classList.remove('show');
+      overlay.classList.add('open');
+    });
+
+    // Abrir modal (editar)
+    async function abrirModalEditar(userId, email) {
+      usuarioActual = userId;
+      modalTitle.textContent = 'Editar usuario';
+      passwordGroup.style.display = 'none';
+      inpEmail.value = email;
+      inpEmail.disabled = true;
+      inpPassword.value = '';
+
+      // Obtener datos del usuario
+      const users = await fetch(`${API}/api/admin/users`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      }).then(r => r.json()).then(d => d.users);
+      const user = users.find(u => u.id === userId);
+      if (user) {
+        inpName.value = user.full_name || '';
+        inpRol.value = user.rol;
+        cuisAsignados = user.cuis_asignados || [];
+      }
+      renderCuisContainer();
+      errorMsg.classList.remove('show');
+      overlay.classList.add('open');
+    }
+
+    // Cerrar modal
+    document.getElementById('modal-close').addEventListener('click', cerrarModal);
+    document.getElementById('btn-cancel').addEventListener('click', cerrarModal);
+    overlay.addEventListener('click', e => {
+      if (e.target === overlay) cerrarModal();
+    });
+
+    function cerrarModal() {
+      overlay.classList.remove('open');
+      usuarioActual = null;
+      inpEmail.disabled = false;
+    }
+
+    // Gestión de CUIs
+    inpCui.addEventListener('keypress', (e) => {
+      if (e.key !== 'Enter') return;
+      e.preventDefault();
+      const cui = inpCui.value.trim();
+      if (!cui || !/^\d{7}$/.test(cui)) {
+        showError('CUI debe ser 7 dígitos');
+        return;
+      }
+      if (cuisAsignados.includes(cui)) {
+        showError('CUI ya está asignado');
+        return;
+      }
+      cuisAsignados.push(cui);
+      inpCui.value = '';
+      renderCuisContainer();
+      errorMsg.classList.remove('show');
+    });
+
+    function renderCuisContainer() {
+      const tagHtml = cuisAsignados.map(cui => `
+        <span class="tag">
+          ${cui}
+          <button type="button" data-cui="${cui}" class="btn-remove-cui">✕</button>
+        </span>
+      `).join('');
+      
+      const inputHtml = '<input id="inp-cui" type="text" placeholder="Ingresa CUI y presiona Enter" pattern="\\d{7}"/>';
+      
+      cuisContainer.innerHTML = tagHtml + inputHtml;
+
+      document.querySelectorAll('.btn-remove-cui').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.preventDefault();
+          cuisAsignados = cuisAsignados.filter(c => c !== btn.dataset.cui);
+          renderCuisContainer();
+        });
+      });
+
+      inpCui = document.getElementById('inp-cui');
+      inpCui.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          const cui = inpCui.value.trim();
+          if (!cui || !/^\d{7}$/.test(cui)) {
+            showError('CUI debe ser 7 dígitos');
+            return;
+          }
+          if (cuisAsignados.includes(cui)) {
+            showError('CUI ya está asignado');
+            return;
+          }
+          cuisAsignados.push(cui);
+          inpCui.value = '';
+          renderCuisContainer();
+          errorMsg.classList.remove('show');
+        }
+      });
+    }
+
+    // Guardar usuario
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = inpEmail.value.trim();
+      const password = inpPassword.value;
+      const name = inpName.value.trim();
+      const rol = inpRol.value;
+
+      if (!email || (usuarioActual === null && !password)) {
+        showError('Faltan datos requeridos');
+        return;
+      }
+
+      try {
+        const payload = { full_name: name, rol, cuis_asignados: cuisAsignados };
+        if (password) payload.password = password;
+
+        const method = usuarioActual ? 'PUT' : 'POST';
+        const url = usuarioActual 
+          ? `${API}/api/admin/users/${usuarioActual}`
+          : API + '/api/admin/users';
+        
+        if (!usuarioActual) payload.email = email;
+
+        const res = await fetch(url, {
+          method,
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+
+        cargarUsuarios();
+        cerrarModal();
+      } catch(err) {
+        showError(err.message);
+      }
+    });
+
+    // Eliminar usuario
+    async function eliminarUsuario(userId) {
+      try {
+        const res = await fetch(`${API}/api/admin/users/${userId}`, {
+          method: 'DELETE',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+        cargarUsuarios();
+      } catch(err) {
+        alert('Error: ' + err.message);
+      }
+    }
+
+    function showError(msg) {
+      errorMsg.textContent = msg;
+      errorMsg.classList.add('show');
+    }
+
+    // Inicializar
+    cargarUsuarios();
+    renderCuisContainer();
+  </script>
+</body>
+</html>
