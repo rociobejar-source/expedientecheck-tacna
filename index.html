@@ -5,474 +5,927 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>ExpedienteCheck · Monitor de Obras MPT Tacna</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg: #f0ede6; --surface: #faf9f6; --header: #0f0f0f; --border: #e0ddd6;
-      --text: #1a1a1a; --muted: #7a7570; --accent: #2a7d4f; --accent-lt: #e8f5ee;
-      --rojo: #c0392b; --rojo-lt: #fdf0ee; --amarillo: #b7860b; --amarillo-lt: #fdf8e8;
-      --verde: #2a7d4f; --verde-lt: #e8f5ee; --sans: 'DM Sans', sans-serif;
+      --bg:        #f0ede6;
+      --surface:   #faf9f6;
+      --header:    #0f0f0f;
+      --border:    #e0ddd6;
+      --text:      #1a1a1a;
+      --muted:     #7a7570;
+      --accent:    #2a7d4f;
+      --accent-lt: #e8f5ee;
+      --rojo:      #c0392b;
+      --rojo-lt:   #fdf0ee;
+      --amarillo:  #b7860b;
+      --amarillo-lt:#fdf8e8;
+      --verde:     #2a7d4f;
+      --verde-lt:  #e8f5ee;
+      --sans:      'DM Sans', sans-serif;
+      --mono:      'DM Mono', monospace;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 14px; min-height: 100vh; }
-    header { background: var(--header); height: 52px; display: flex; align-items: center; justify-content: space-between; padding: 0 24px; position: sticky; top: 0; z-index: 50; }
-    .logo { color: #ffffff; font-weight: 700; font-size: 15px; }
-    .header-right { display: flex; align-items: center; gap: 16px; color: #9ca3af; font-size: 13px; }
-    .user-info { display: flex; align-items: center; gap: 12px; }
-    .user-role { display: inline-block; background: var(--accent-lt); color: var(--accent); font-size: 10px; font-weight: 600; padding: 3px 8px; border-radius: 3px; }
-    .btn-logout, .btn-change-pwd, .btn-admin { background: transparent; border: 1px solid #4b5563; border-radius: 4px; color: #9ca3af; padding: 5px 12px; font-size: 12px; cursor: pointer; transition: all 0.2s; }
-    .btn-logout:hover, .btn-change-pwd:hover, .btn-admin:hover { border-color: #fff; color: #fff; }
+
+    /* ── HEADER ── */
+    header {
+      background: var(--header);
+      height: 52px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      position: sticky; top: 0; z-index: 50;
+    }
+    .logo { color: #ffffff; font-weight: 700; font-size: 15px; letter-spacing: -0.3px; }
+    .header-right { color: #9ca3af; font-size: 13px; }
+
+    /* ── ROLE SWITCHER ── */
+    .role-bar {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 10px 24px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .role-label { font-size: 12px; color: var(--muted); margin-right: 4px; }
+    .role-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      color: var(--muted);
+      font-family: var(--sans);
+      font-size: 12px;
+      font-weight: 500;
+      padding: 5px 14px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .role-btn.active {
+      background: var(--header);
+      border-color: var(--header);
+      color: #fff;
+    }
+    .role-btn:hover:not(.active) { border-color: var(--text); color: var(--text); }
+
+    /* ── MAIN ── */
     main { padding: 28px 24px; max-width: 1300px; margin: 0 auto; }
-    .page-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 24px; }
-    .page-title { font-size: 22px; font-weight: 700; }
+
+    .page-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 24px;
+    }
+    .page-title { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; }
     .page-title span { font-weight: 300; }
     .page-subtitle { font-size: 13px; color: var(--muted); margin-top: 3px; }
-    .btn-actualizar { background: var(--header); border: none; border-radius: 8px; color: #fff; font-family: var(--sans); font-size: 13px; font-weight: 500; padding: 9px 18px; cursor: pointer; display: flex; align-items: center; gap: 7px; transition: opacity 0.2s; }
+
+    .btn-actualizar {
+      background: var(--header);
+      border: none;
+      border-radius: 8px;
+      color: #fff;
+      font-family: var(--sans);
+      font-size: 13px;
+      font-weight: 500;
+      padding: 9px 18px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      transition: opacity 0.2s;
+      white-space: nowrap;
+    }
     .btn-actualizar:hover { opacity: 0.8; }
-    .spin { animation: spin 1s linear infinite; }
+    .btn-actualizar:disabled { opacity: 0.4; cursor: not-allowed; }
+    .spin { animation: spin 1s linear infinite; display: inline-block; }
     @keyframes spin { to { transform: rotate(360deg); } }
-    .stats-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 20px; }
+
+    /* ── STATS ── */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 12px;
+      margin-bottom: 20px;
+    }
     @media (max-width: 900px) { .stats-grid { grid-template-columns: repeat(3, 1fr); } }
-    .stat { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px; }
-    .stat-label { font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
-    .stat-value { font-size: 26px; font-weight: 700; line-height: 1; }
-    .stat-sub { font-size: 11px; color: var(--muted); margin-top: 4px; }
+    @media (max-width: 600px) { .stats-grid { grid-template-columns: repeat(2, 1fr); } }
+
+    .stat {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px 18px;
+    }
+    .stat-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); margin-bottom: 8px; }
+    .stat-value { font-size: 26px; font-weight: 700; letter-spacing: -1px; line-height: 1; }
+    .stat-sub   { font-size: 11px; color: var(--muted); margin-top: 4px; }
+    .stat-value.verde    { color: var(--verde); }
+    .stat-value.rojo     { color: var(--rojo); }
+    .stat-value.amarillo { color: var(--amarillo); }
+
+    /* ── ALERT BANNER ── */
+    .alert-banner {
+      background: var(--rojo-lt);
+      border: 1px solid #f5c6c2;
+      border-radius: 8px;
+      padding: 11px 16px;
+      font-size: 13px;
+      color: var(--rojo);
+      margin-bottom: 20px;
+      display: none;
+    }
+    .alert-banner strong { font-weight: 600; }
+
+    /* ── FILTERS ── */
     .filters { display: flex; gap: 6px; margin-bottom: 16px; flex-wrap: wrap; }
-    .filter-btn { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; color: var(--muted); font-family: var(--sans); font-size: 12px; font-weight: 500; padding: 6px 14px; cursor: pointer; transition: all 0.15s; }
+    .filter-btn {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      color: var(--muted);
+      font-family: var(--sans);
+      font-size: 12px;
+      font-weight: 500;
+      padding: 6px 14px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
     .filter-btn.active { background: var(--header); border-color: var(--header); color: #fff; }
-    .table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; overflow-x: auto; }
+    .filter-btn:hover:not(.active) { border-color: var(--text); color: var(--text); }
+
+    /* ── TABLE ── */
+    .table-wrap {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      overflow-x: auto;
+    }
     table { width: 100%; border-collapse: collapse; min-width: 900px; }
-    thead th { background: var(--header); color: #9ca3af; font-size: 10px; font-weight: 600; text-transform: uppercase; padding: 11px 14px; text-align: left; }
+    thead th {
+      background: var(--header);
+      color: #9ca3af;
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      padding: 11px 14px;
+      text-align: left;
+      white-space: nowrap;
+    }
     tbody tr { border-bottom: 1px solid var(--border); transition: background 0.1s; }
+    tbody tr:last-child { border-bottom: none; }
     tbody tr:hover { background: #f5f3ee; }
     tbody td { padding: 13px 14px; font-size: 13px; vertical-align: middle; }
-    .obra-nombre { font-weight: 600; }
-    .badge { display: inline-block; font-size: 10px; font-weight: 600; padding: 3px 8px; border-radius: 4px; }
-    .badge.rojo { background: var(--rojo-lt); color: var(--rojo); }
+
+    .obra-nombre { font-weight: 600; color: var(--text); max-width: 220px; line-height: 1.3; }
+    .obra-entidad { font-size: 11px; color: var(--muted); margin-top: 3px; line-height: 1.4; }
+    .cui-badge {
+      display: inline-block;
+      font-family: var(--mono);
+      font-size: 10px;
+      background: #f0ede6;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 1px 6px;
+      margin-top: 4px;
+      color: var(--muted);
+    }
+    .f12b-badge {
+      display: inline-block;
+      font-size: 10px;
+      border-radius: 4px;
+      padding: 1px 6px;
+      margin-left: 4px;
+      font-weight: 600;
+    }
+    .f12b-badge.ok    { background: var(--verde-lt); color: var(--verde); }
+    .f12b-badge.late  { background: var(--rojo-lt);  color: var(--rojo); }
+
+    .monto { font-family: var(--mono); font-size: 12px; color: var(--text); }
+    .monto-sub { font-size: 11px; color: var(--muted); }
+
+    .progress-col { min-width: 130px; }
+    .prog-row { display: flex; align-items: center; gap: 7px; margin-bottom: 4px; }
+    .prog-row:last-child { margin-bottom: 0; }
+    .prog-label { font-size: 10px; color: var(--muted); width: 14px; }
+    .prog-bar { flex: 1; height: 5px; background: var(--border); border-radius: 99px; overflow: hidden; }
+    .prog-fill { height: 100%; border-radius: 99px; }
+    .prog-fill.fisico      { background: #3b82f6; }
+    .prog-fill.financiero  { background: var(--verde); }
+    .prog-pct { font-family: var(--mono); font-size: 11px; color: var(--muted); min-width: 38px; text-align: right; }
+
+    .pct-grande {
+      font-family: var(--mono);
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 4px 9px;
+      white-space: nowrap;
+    }
+    .badge::before { content: ''; width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+    .badge.rojo     { background: var(--rojo-lt);     color: var(--rojo);     }
+    .badge.rojo::before     { background: var(--rojo);     }
     .badge.amarillo { background: var(--amarillo-lt); color: var(--amarillo); }
-    .badge.verde { background: var(--verde-lt); color: var(--verde); }
-    .btn-detalle { background: transparent; border: 1px solid var(--border); border-radius: 4px; color: var(--text); padding: 5px 10px; font-size: 12px; cursor: pointer; transition: all 0.2s; }
-    .btn-detalle:hover { border-color: var(--accent); color: var(--accent); }
-    .overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 100; align-items: center; justify-content: center; }
+    .badge.amarillo::before { background: var(--amarillo); }
+    .badge.verde    { background: var(--verde-lt);    color: var(--verde);    }
+    .badge.verde::before    { background: var(--verde);    }
+    .badge.gris     { background: #f0ede6;             color: var(--muted);    }
+    .badge.gris::before     { background: var(--muted);    }
+
+    .estado-dot {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+    .estado-dot::before {
+      content: ''; width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+    }
+    .estado-dot.rojo::before     { background: var(--rojo); box-shadow: 0 0 0 3px var(--rojo-lt); }
+    .estado-dot.verde::before    { background: var(--verde); box-shadow: 0 0 0 3px var(--verde-lt); }
+    .estado-dot.amarillo::before { background: var(--amarillo); box-shadow: 0 0 0 3px var(--amarillo-lt); }
+    .estado-dot.gris::before     { background: #ccc; }
+
+    .btn-detalle {
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--muted);
+      font-family: var(--sans);
+      font-size: 11px;
+      font-weight: 500;
+      padding: 5px 11px;
+      cursor: pointer;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+    .btn-detalle:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-lt); }
+
+    /* Loading */
+    .skeleton {
+      background: linear-gradient(90deg, var(--border) 25%, #e8e4dc 50%, var(--border) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.2s infinite;
+      border-radius: 4px; height: 13px;
+    }
+    @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+
+    .empty-state { text-align: center; padding: 48px 20px; color: var(--muted); font-size: 13px; }
+
+    /* ── MODAL ── */
+    .overlay {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(15,15,15,0.55);
+      backdrop-filter: blur(3px);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
     .overlay.open { display: flex; }
-    .modal { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 28px; max-width: 500px; width: 100%; max-height: 90vh; overflow-y: auto; position: relative; }
-    .modal-close { position: absolute; top: 16px; right: 16px; background: transparent; border: none; font-size: 20px; cursor: pointer; color: var(--muted); }
-    .modal-title { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
-    .form-group { margin-bottom: 16px; }
-    .form-label { display: block; font-size: 12px; font-weight: 600; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
-    .form-input, .form-textarea { width: 100%; border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px; font-family: var(--sans); font-size: 14px; color: var(--text); background: white; }
-    .form-textarea { resize: vertical; min-height: 80px; }
-    .btn-save, .btn-cancel { width: 100%; border: none; border-radius: 6px; padding: 11px 16px; font-family: var(--sans); font-size: 14px; font-weight: 600; cursor: pointer; margin-top: 8px; transition: opacity 0.2s; }
-    .btn-save { background: var(--accent); color: white; }
-    .btn-save:hover { opacity: 0.9; }
-    .btn-cancel { background: var(--surface); border: 1px solid var(--border); color: var(--text); }
-    .toast { position: fixed; bottom: 20px; right: 20px; background: var(--header); color: white; padding: 12px 18px; border-radius: 6px; font-size: 13px; z-index: 200; animation: slideIn 0.3s ease; }
-    .toast.error { background: var(--rojo); }
-    @keyframes slideIn { from { transform: translateX(400px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-    .empty-state { text-align: center; padding: 40px 20px; color: var(--muted); }
+
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      width: 100%; max-width: 560px;
+      max-height: 90vh;
+      overflow-y: auto;
+      position: relative;
+      animation: slideUp 0.2s ease;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+    }
+    @keyframes slideUp { from{transform:translateY(16px);opacity:0} to{transform:translateY(0);opacity:1} }
+
+    .modal-header {
+      padding: 22px 24px 16px;
+      border-bottom: 1px solid var(--border);
+      position: sticky; top: 0;
+      background: var(--surface);
+      z-index: 1;
+    }
+    .modal-close {
+      position: absolute; top: 18px; right: 18px;
+      background: transparent; border: none;
+      color: var(--muted); font-size: 20px;
+      cursor: pointer; line-height: 1;
+      width: 28px; height: 28px;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 6px; transition: background 0.15s;
+    }
+    .modal-close:hover { background: var(--border); }
+
+    .modal-title { font-size: 15px; font-weight: 700; line-height: 1.3; padding-right: 36px; }
+    .modal-meta  { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+    .modal-body { padding: 20px 24px; }
+
+    /* Info de solo lectura */
+    .info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .info-item label {
+      display: block; font-size: 10px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.5px;
+      color: var(--muted); margin-bottom: 4px;
+    }
+    .info-item .val {
+      font-size: 13px; font-weight: 600;
+      font-family: var(--mono);
+    }
+
+    .divider {
+      border: none; border-top: 1px solid var(--border);
+      margin: 20px 0;
+    }
+
+    .section-title-modal {
+      font-size: 12px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.5px;
+      color: var(--muted); margin-bottom: 14px;
+    }
+
+    .field { margin-bottom: 14px; }
+    .field label {
+      display: block; font-size: 11px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.5px;
+      color: var(--muted); margin-bottom: 6px;
+    }
+    .field input[type="number"],
+    .field input[type="text"],
+    .field textarea,
+    .field select {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      color: var(--text);
+      font-family: var(--sans);
+      font-size: 13px;
+      padding: 9px 12px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .field input:focus, .field textarea:focus, .field select:focus { border-color: var(--accent); }
+    .field textarea { resize: vertical; min-height: 80px; }
+
+    .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+    .modal-footer {
+      padding: 16px 24px 20px;
+      display: flex;
+      gap: 8px;
+      border-top: 1px solid var(--border);
+      position: sticky; bottom: 0;
+      background: var(--surface);
+    }
+    .btn-cancel {
+      flex: 1;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      color: var(--muted);
+      font-family: var(--sans);
+      font-size: 13px;
+      font-weight: 500;
+      padding: 9px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn-cancel:hover { border-color: var(--text); color: var(--text); }
+    .btn-save {
+      flex: 2;
+      background: var(--header);
+      border: none;
+      border-radius: 7px;
+      color: #fff;
+      font-family: var(--sans);
+      font-size: 13px;
+      font-weight: 600;
+      padding: 9px;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    .btn-save:hover { opacity: 0.85; }
+    .btn-save:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* Toast */
+    #toast {
+      position: fixed; bottom: 24px; right: 24px;
+      background: var(--header);
+      border-radius: 9px;
+      color: #fff;
+      font-size: 13px;
+      padding: 12px 18px;
+      transform: translateY(80px); opacity: 0;
+      transition: all 0.3s; z-index: 200;
+      display: flex; align-items: center; gap: 8px;
+    }
+    #toast.show { transform: translateY(0); opacity: 1; }
+    #toast.success::before { content: '✓'; color: #ffffff; font-weight: 700; }
+    #toast.error::before   { content: '✕'; color: #f87171; font-weight: 700; }
+
+    /* Nota pública */
+    .public-note {
+      background: var(--accent-lt);
+      border: 1px solid #b8dfc9;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 12px;
+      color: var(--accent);
+      margin-bottom: 20px;
+      font-weight: 500;
+    }
   </style>
 </head>
 <body>
-  <header>
-    <div class="logo">ExpedienteCheck</div>
-    <div class="header-right">
-      <div class="user-info" id="user-info" style="display:none;">
-        <span id="user-email"></span>
-        <span class="user-role" id="user-role"></span>
-      </div>
-      <button class="btn-admin" id="btn-admin" style="display:none;">Panel Admin</button>
-      <button class="btn-change-pwd" id="btn-change-password" style="display:none;">Cambiar contraseña</button>
-      <button class="btn-logout" id="btn-logout" style="display:none;">Cerrar sesión</button>
-    </div>
-  </header>
 
-  <main>
-    <div class="page-header">
-      <div>
-        <h1 class="page-title">Monitor <span>de Obras</span></h1>
-        <p class="page-subtitle">Municipalidad Provincial de Tacna · 2026</p>
-      </div>
-      <button class="btn-actualizar" id="btn-actualizar">
-        <span id="icon-actualizar">↻</span> Actualizar
-      </button>
-    </div>
+<!-- HEADER -->
+<header>
+  <span class="logo">ExpedienteCheck</span>
+  <span class="header-right" id="header-rol">Vista pública</span>
+</header>
 
-    <div class="stats-grid">
-      <div class="stat">
-        <div class="stat-label">Total obras</div>
-        <div class="stat-value" id="stat-total">—</div>
-      </div>
-      <div class="stat">
-        <div class="stat-label">PIM 2026</div>
-        <div class="stat-value" id="stat-pim">—</div>
-        <div class="stat-sub" id="stat-dev-pct">—</div>
-      </div>
-      <div class="stat">
-        <div class="stat-label">Devengado 2026</div>
-        <div class="stat-value" id="stat-devengado">—</div>
-      </div>
-      <div class="stat">
-        <div class="stat-label">Obras en riesgo</div>
-        <div class="stat-value rojo" id="stat-rojo">0</div>
-      </div>
-      <div class="stat">
-        <div class="stat-label">Requieren atención</div>
-        <div class="stat-value amarillo" id="stat-amarillo">0</div>
-      </div>
-    </div>
+<!-- ROLE BAR -->
+<div class="role-bar">
+  <span class="role-label">Ver como:</span>
+  <button class="role-btn active" data-rol="publico">Vista pública</button>
+  <button class="role-btn" data-rol="especialista">Especialista de Obra</button>
+  <button class="role-btn" data-rol="residente">Residente de Obra</button>
+  <button class="role-btn" data-rol="supervisor">Supervisor</button>
+</div>
 
-    <div class="filters">
-      <button class="filter-btn active" data-filtro="todas" id="f-todas">Todas (<span id="f-total">0</span>)</button>
-      <button class="filter-btn" data-filtro="rojo" id="f-rojo">Riesgo alto (<span id="f-rojo-count">0</span>)</button>
-      <button class="filter-btn" data-filtro="amarillo" id="f-amarillo">Atención (<span id="f-amarillo-count">0</span>)</button>
-    </div>
+<!-- MAIN -->
+<main>
+  <div class="public-note">
+    ℹ️ Datos de ejecución de inversiones de la Municipalidad Provincial de Tacna · Fuente: SSI-MEF e Infobras
+  </div>
 
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>Obra</th>
-            <th>CUI</th>
-            <th>Costo</th>
-            <th>Avance físico</th>
-            <th>Avance financiero</th>
-            <th>Estado</th>
-            <th>Acción</th>
-          </tr>
-        </thead>
-        <tbody id="tbody">
-          <tr><td colspan="7"><div class="empty-state">Cargando obras...</div></td></tr>
-        </tbody>
-      </table>
+  <div class="page-header">
+    <div>
+      <div class="page-title">Monitor de <span>Obras en Ejecución</span></div>
+      <div class="page-subtitle" id="page-subtitle">Datos desde SSI — MEF · <span id="fecha-hoy"></span></div>
     </div>
-  </main>
+    <button class="btn-actualizar" id="btn-actualizar">
+      <span id="icon-refresh">↻</span> Actualizar datos
+    </button>
+  </div>
 
-  <!-- MODAL: Detalle de obra -->
-  <div class="overlay" id="overlay">
-    <div class="modal">
-      <button class="modal-close" id="modal-close">✕</button>
-      <h2 class="modal-title" id="modal-title"></h2>
-      <form id="form-obra" style="display:none;">
-        <div class="form-group">
-          <label class="form-label">Avance físico (%)</label>
-          <input type="number" id="inp-fisico" class="form-input" min="0" max="100" step="0.1"/>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Avance financiero (%)</label>
-          <input type="number" id="inp-financiero" class="form-input" min="0" max="100" step="0.1"/>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Situación actual</label>
-          <textarea id="inp-situacion" class="form-textarea" placeholder="Describe la situación..."></textarea>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Punto crítico</label>
-          <textarea id="inp-critico" class="form-textarea" placeholder="Menciona problemas..."></textarea>
-        </div>
-        <button type="submit" class="btn-save">Guardar registro</button>
-        <button type="button" class="btn-cancel" id="btn-cancel">Cerrar</button>
-      </form>
-      <div id="detail-view" style="padding-top: 20px;"></div>
+  <!-- STATS -->
+  <div class="stats-grid">
+    <div class="stat">
+      <div class="stat-label">Inversiones con PIM 2026</div>
+      <div class="stat-value" id="stat-total">—</div>
+      <div class="stat-sub">Con PIM asignado 2026 > 0</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">PIM 2026 (S/)</div>
+      <div class="stat-value verde" id="stat-pim">—</div>
+      <div class="stat-sub">Presupuesto vigente 2026</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Devengado 2026 (S/)</div>
+      <div class="stat-value verde" id="stat-devengado">—</div>
+      <div class="stat-sub" id="stat-dev-pct">% del PIM 2026</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Alertas Rojas</div>
+      <div class="stat-value rojo" id="stat-rojo">—</div>
+      <div class="stat-sub">Brecha físico-financiero >20%</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Alertas Amarillas</div>
+      <div class="stat-value amarillo" id="stat-amarillo">—</div>
+      <div class="stat-sub">Requieren atención</div>
     </div>
   </div>
 
-  <!-- MODAL: Cambiar contraseña -->
-  <div class="overlay" id="overlay-password">
-    <div class="modal">
-      <button class="modal-close" id="modal-close-password">✕</button>
-      <h2 class="modal-title">Cambiar contraseña</h2>
-      <form id="form-password" style="margin-top: 20px;">
-        <div class="form-group">
-          <label class="form-label">Contraseña actual</label>
-          <input type="password" id="inp-current-password" class="form-input" required/>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Nueva contraseña</label>
-          <input type="password" id="inp-new-password" class="form-input" placeholder="Mínimo 6 caracteres" required/>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Confirmar nueva contraseña</label>
-          <input type="password" id="inp-confirm-password" class="form-input" required/>
-        </div>
-        <button type="submit" class="btn-save">Cambiar contraseña</button>
-        <button type="button" class="btn-cancel" id="btn-cancel-password">Cancelar</button>
-      </form>
-    </div>
+  <!-- ALERT BANNER -->
+  <div class="alert-banner" id="alert-banner"></div>
+
+  <!-- FILTERS -->
+  <div class="filters" id="filters">
+    <button class="filter-btn active" data-filter="todas">Todas (<span id="f-total">0</span>)</button>
+    <button class="filter-btn" data-filter="rojo">Riesgo alto (<span id="f-rojo">0</span>)</button>
+    <button class="filter-btn" data-filter="amarillo">Riesgo medio (<span id="f-amarillo">0</span>)</button>
+    <button class="filter-btn" data-filter="verde">Sin alerta (<span id="f-verde">0</span>)</button>
   </div>
 
-  <script>
-    const API = 'https://api.expedientecheck.com';
-    const token = localStorage.getItem('expediente_token');
-    const userMeta = JSON.parse(localStorage.getItem('expediente_user') || '{}');
-    
-    let obras = [];
-    let filtro = 'todas';
-    let obraActual = null;
-    let puedeEditar = !!token;
-
-    // Si hay usuario logueado, mostrar info
-    if (token && userMeta.id) {
-      document.getElementById('user-email').textContent = userMeta.email;
-      document.getElementById('user-role').textContent = userMeta.rol;
-      document.getElementById('user-info').style.display = 'flex';
-      document.getElementById('btn-change-password').style.display = 'block';
-      document.getElementById('btn-logout').style.display = 'block';
-
-      if (userMeta.rol === 'admin') {
-        document.getElementById('btn-admin').style.display = 'block';
-        document.getElementById('btn-admin').addEventListener('click', () => {
-          window.location.href = 'admin.html';
-        });
-      }
-    } else {
-      // Usuario público
-      document.getElementById('btn-actualizar').style.display = 'block';
-    }
-
-    // Logout
-    document.getElementById('btn-logout').addEventListener('click', () => {
-      localStorage.removeItem('expediente_token');
-      localStorage.removeItem('expediente_user');
-      window.location.href = 'login.html';
-    });
-
-    // Filtros
-    document.querySelectorAll('.filter-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        filtro = btn.dataset.filtro;
-        renderTabla();
-      });
-    });
-
-    // Cargar obras
-    async function cargarObras() {
-      document.getElementById('btn-actualizar').disabled = true;
-      document.getElementById('icon-actualizar').classList.add('spin');
-
-      try {
-        const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
-        const res = await fetch(`${API}/api/obras`, { headers });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Error al cargar');
-
-        obras = data.obras || [];
-        renderStats();
-        renderFiltros();
-        renderTabla();
-      } catch(err) {
-        toast(err.message || 'Error al cargar obras', 'error');
-      } finally {
-        document.getElementById('btn-actualizar').disabled = false;
-        document.getElementById('icon-actualizar').classList.remove('spin');
-      }
-    }
-
-    function fmtM(n) {
-      if (!n) return '—';
-      return 'S/ ' + Number(n).toLocaleString('es-PE', { maximumFractionDigits: 0 });
-    }
-
-    function renderStats() {
-      const totalPim = obras.reduce((s,o)=> s+(o.pim_2026||0), 0);
-      const totalDev = obras.reduce((s,o)=> s+(o.devengado_2026||0), 0);
-      const rojas = obras.filter(o => o.alerta==='rojo').length;
-      const amarillas = obras.filter(o => o.alerta==='amarillo').length;
-      const pct = totalPim > 0 ? ((totalDev/totalPim)*100).toFixed(1) : '—';
-
-      document.getElementById('stat-total').textContent = obras.length;
-      document.getElementById('stat-pim').textContent = fmtM(totalPim);
-      document.getElementById('stat-devengado').textContent = fmtM(totalDev);
-      document.getElementById('stat-rojo').textContent = rojas;
-      document.getElementById('stat-amarillo').textContent = amarillas;
-      document.getElementById('stat-dev-pct').textContent = `${pct}% del PIM 2026`;
-    }
-
-    function renderFiltros() {
-      document.getElementById('f-total').textContent = obras.length;
-      document.getElementById('f-rojo-count').textContent = obras.filter(o=>o.alerta==='rojo').length;
-      document.getElementById('f-amarillo-count').textContent = obras.filter(o=>o.alerta==='amarillo').length;
-    }
-
-    function renderTabla() {
-      const tbody = document.getElementById('tbody');
-      let filtradas = filtro === 'todas' ? obras
-        : filtro === 'amarillo' ? obras.filter(o=>o.alerta==='amarillo')
-        : obras.filter(o=>o.alerta===filtro);
-
-      if (!filtradas.length) {
-        tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state">Sin obras para mostrar</div></td></tr>`;
-        return;
-      }
-
-      filtradas = [...filtradas].sort((a,b) => {
-        const ord = {rojo:0,amarillo:1,verde:2};
-        return (ord[a.alerta]??2) - (ord[b.alerta]??2);
-      });
-
-      tbody.innerHTML = filtradas.map(o => {
-        const alerta = o.alerta || 'verde';
-        const badge = alerta==='rojo' ? '<span class="badge rojo">Riesgo alto</span>'
-          : alerta==='amarillo' ? '<span class="badge amarillo">Atención</span>'
-          : '<span class="badge verde">Sin alertas</span>';
-
-        return `
+  <!-- TABLE -->
+  <div class="table-wrap">
+    <table>
+      <thead>
         <tr>
-          <td class="obra-nombre">${o.nombre || 'Sin nombre'}</td>
-          <td>${o.cui}</td>
-          <td>${fmtM(o.costo_proyecto)}</td>
-          <td>${o.avance_fisico ? o.avance_fisico.toFixed(1) + '%' : '—'}</td>
-          <td>${o.avance_financiero ? o.avance_financiero.toFixed(1) + '%' : '—'}</td>
-          <td>${badge}</td>
-          <td>
-            <button class="btn-detalle" data-id="${o.id}">
-              ${puedeEditar ? 'Ver / Editar' : 'Ver detalle'}
-            </button>
-          </td>
-        </tr>`;
-      }).join('');
+          <th>Obra / Entidad</th>
+          <th>CUI</th>
+          <th>Costo Proyecto (S/)</th>
+          <th>Av. Físico Acum.</th>
+          <th>Av. Financiero Acum.</th>
+          <th>PIM 2026 (S/)</th>
+          <th>Dev. 2026 (S/)</th>
+          <th>Av. 2026 %</th>
+          <th>Alertas</th>
+          <th>Estado</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="tbody">
+        <tr><td colspan="11" style="padding:20px"><div class="skeleton"></div></td></tr>
+      </tbody>
+    </table>
+  </div>
+</main>
 
-      tbody.querySelectorAll('.btn-detalle').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const id = parseInt(btn.dataset.id);
-          abrirModal(obras.find(o=>o.id===id));
-        });
-      });
-    }
+<!-- MODAL DETALLE -->
+<div class="overlay" id="overlay">
+  <div class="modal" id="modal">
+    <div class="modal-header">
+      <button class="modal-close" id="modal-close">×</button>
+      <div class="modal-title" id="modal-title">—</div>
+      <div class="modal-meta" id="modal-meta">—</div>
+    </div>
+    <div class="modal-body">
 
-    function abrirModal(obra) {
-      obraActual = obra;
-      document.getElementById('modal-title').textContent = obra.nombre || 'Sin nombre';
+      <!-- Info solo lectura -->
+      <div class="info-grid">
+        <div class="info-item">
+          <label>CUI</label>
+          <div class="val" id="d-cui">—</div>
+        </div>
+        <div class="info-item">
+          <label>Costo proyecto</label>
+          <div class="val" id="d-costo">—</div>
+        </div>
+        <div class="info-item">
+          <label>Avance físico</label>
+          <div class="val" id="d-fisico">—</div>
+        </div>
+        <div class="info-item">
+          <label>Avance financiero</label>
+          <div class="val" id="d-financiero">—</div>
+        </div>
+        <div class="info-item">
+          <label>PIM 2026</label>
+          <div class="val" id="d-pim">—</div>
+        </div>
+        <div class="info-item">
+          <label>Devengado 2026</label>
+          <div class="val" id="d-devengado">—</div>
+        </div>
+      </div>
+
+      <hr class="divider"/>
+
+      <!-- Sección editable -->
+      <div class="section-title-modal" id="modal-edit-title">Registro de seguimiento</div>
+
+      <div class="field-row">
+        <div class="field">
+          <label>Avance físico (%)</label>
+          <input type="number" id="inp-fisico" min="0" max="100" step="0.1" placeholder="0.0"/>
+        </div>
+        <div class="field">
+          <label>Avance financiero (%)</label>
+          <input type="number" id="inp-financiero" min="0" max="100" step="0.1" placeholder="0.0"/>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Situación actual de la obra</label>
+        <textarea id="inp-situacion" placeholder="Describe el estado actual de la obra, avances recientes, etc."></textarea>
+      </div>
+
+      <div class="field">
+        <label>Punto crítico / Alerta</label>
+        <textarea id="inp-critico" placeholder="Indica si hay problemas, paralizaciones, riesgos o situaciones que requieran atención..." style="min-height:70px"></textarea>
+      </div>
+
+      <div class="field">
+        <label>Contratista</label>
+        <input type="text" id="inp-contratista" placeholder="Nombre del contratista ejecutor"/>
+      </div>
+
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" id="btn-cancel">Cancelar</button>
+      <button class="btn-save" id="btn-save">Guardar registro</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ── CONFIG ────────────────────────────────────────────────────
+const API = 'https://api.expedientecheck.com';
+
+// ── ESTADO ───────────────────────────────────────────────────
+let obras       = [];
+let filtro      = 'todas';
+let rolActivo   = 'publico';
+let obraActual  = null;
+
+// ── FECHA ────────────────────────────────────────────────────
+document.getElementById('fecha-hoy').textContent =
+  new Date().toLocaleDateString('es-PE', { day: 'numeric', month: 'long', year: 'numeric' });
+
+// ── UTILS ────────────────────────────────────────────────────
+const fmtM  = v => v != null && v > 0
+  ? 'S/ ' + (v >= 1e6 ? (v/1e6).toFixed(1)+'M' : v >= 1e3 ? (v/1e3).toFixed(0)+'K' : v.toFixed(0))
+  : '—';
+const fmtPct = v => v != null ? Number(v).toFixed(1)+'%' : '—';
+const fmtFecha = iso => iso
+  ? new Date(iso).toLocaleDateString('es-PE',{day:'2-digit',month:'short',year:'numeric'})
+  : '—';
+
+function toast(msg, tipo='success') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = `show ${tipo}`;
+  setTimeout(()=> el.className='', 3000);
+}
+
+// ── ROLES ────────────────────────────────────────────────────
+document.querySelectorAll('.role-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.role-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    rolActivo = btn.dataset.rol;
+    document.getElementById('header-rol').textContent =
+      rolActivo === 'publico' ? 'Vista pública' :
+      rolActivo === 'especialista' ? 'Especialista de Obra' :
+      rolActivo === 'residente' ? 'Residente de Obra' : 'Supervisor';
+    renderTabla();
+  });
+});
+
+// ── FILTROS ──────────────────────────────────────────────────
+document.querySelectorAll('.filter-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    filtro = btn.dataset.filter;
+    renderTabla();
+  });
+});
+
+// ── CARGAR DATOS ─────────────────────────────────────────────
+async function cargarObras() {
+  const btn = document.getElementById('btn-actualizar');
+  const icon = document.getElementById('icon-refresh');
+  btn.disabled = true;
+  icon.className = 'spin';
+  icon.textContent = '↻';
+
+  try {
+    const res  = await fetch(`${API}/api/obras`);
+    const data = await res.json();
+    obras = data.obras || [];
+    renderStats();
+    renderFiltros();
+    renderTabla();
+  } catch(err) {
+    document.getElementById('tbody').innerHTML =
+      `<tr><td colspan="11"><div class="empty-state">Error al cargar datos. Verifica tu conexión.</div></td></tr>`;
+  } finally {
+    btn.disabled = false;
+    icon.className = '';
+  }
+}
+
+document.getElementById('btn-actualizar').addEventListener('click', cargarObras);
+
+// ── STATS ────────────────────────────────────────────────────
+function renderStats() {
+  const conPim  = obras.filter(o => o.pim_2026 > 0);
+  const totalPim   = obras.reduce((s,o)=> s+(o.pim_2026||0), 0);
+  const totalDev   = obras.reduce((s,o)=> s+(o.devengado_2026||0), 0);
+  const rojas      = obras.filter(o => o.alerta==='rojo').length;
+  const amarillas  = obras.filter(o => o.alerta==='amarillo').length;
+  const pct = totalPim > 0 ? ((totalDev/totalPim)*100).toFixed(1) : '—';
+
+  document.getElementById('stat-total').textContent    = conPim.length || obras.length;
+  document.getElementById('stat-pim').textContent      = fmtM(totalPim);
+  document.getElementById('stat-devengado').textContent= fmtM(totalDev);
+  document.getElementById('stat-rojo').textContent     = rojas;
+  document.getElementById('stat-amarillo').textContent = amarillas;
+  document.getElementById('stat-dev-pct').textContent  = `${pct}% del PIM 2026`;
+
+  const banner = document.getElementById('alert-banner');
+  if (rojas > 0) {
+    banner.style.display = 'block';
+    banner.innerHTML = `⚠️ <strong>${rojas} obra(s) con riesgo alto.</strong> Avance financiero supera al físico en más de 20 puntos.`;
+  }
+}
+
+// ── CONTADORES FILTROS ───────────────────────────────────────
+function renderFiltros() {
+  document.getElementById('f-total').textContent    = obras.length;
+  document.getElementById('f-rojo').textContent     = obras.filter(o=>o.alerta==='rojo').length;
+  document.getElementById('f-amarillo').textContent = obras.filter(o=>o.alerta==='amarillo').length;
+  document.getElementById('f-verde').textContent    = obras.filter(o=>o.alerta==='verde'||!o.alerta).length;
+}
+
+// ── TABLA ────────────────────────────────────────────────────
+function renderTabla() {
+  const tbody = document.getElementById('tbody');
+  let filtradas = filtro === 'todas' ? obras
+    : filtro === 'verde' ? obras.filter(o=>o.alerta==='verde'||!o.alerta)
+    : obras.filter(o=>o.alerta===filtro);
+
+  if (!filtradas.length) {
+    tbody.innerHTML = `<tr><td colspan="11"><div class="empty-state">Sin obras para mostrar</div></td></tr>`;
+    return;
+  }
+
+  // Ordenar: rojo primero
+  filtradas = [...filtradas].sort((a,b) => {
+    const ord = {rojo:0,amarillo:1,verde:2};
+    return (ord[a.alerta]??2) - (ord[b.alerta]??2);
+  });
+
+  const puedeEditar = rolActivo !== 'publico';
+
+  tbody.innerHTML = filtradas.map(o => {
+    const alerta   = o.alerta || 'verde';
+    const fis      = o.avance_fisico     != null ? Number(o.avance_fisico)     : null;
+    const fin      = o.avance_financiero != null ? Number(o.avance_financiero) : null;
+    const avPct    = o.avance_2026_pct   != null ? Number(o.avance_2026_pct)   : null;
+    const brecha   = (fis!=null&&fin!=null) ? (fin-fis).toFixed(1) : null;
+
+    const badgeAlerta = alerta==='rojo'
+      ? `<span class="badge rojo">Brecha >20%</span>`
+      : alerta==='amarillo'
+      ? `<span class="badge amarillo">Brecha ${brecha}%</span>`
+      : `<span class="badge gris">Sin alertas</span>`;
+
+    const estadoDot = alerta==='rojo'
+      ? `<span class="estado-dot rojo">Riesgo alto</span>`
+      : alerta==='amarillo'
+      ? `<span class="estado-dot amarillo">Atención</span>`
+      : `<span class="estado-dot verde">Sin alerta</span>`;
+
+    return `
+    <tr>
+      <td>
+        <div class="obra-nombre">${o.nombre || 'Sin nombre'}</div>
+        <div class="obra-entidad">${o.entidad || 'MPT · '+( o.modalidad||'')}</div>
+        <div>
+          <span class="cui-badge">${o.cui}</span>
+          ${o.f12b_dias_retraso > 0 ? `<span class="f12b-badge late">F12B +${o.f12b_dias_retraso}d</span>` : ''}
+        </div>
+      </td>
+      <td style="font-family:var(--mono);font-size:12px;color:var(--muted)">${o.cui}</td>
+      <td class="monto">${fmtM(o.costo_proyecto)}</td>
+      <td class="progress-col">
+        <div class="prog-row">
+          <span class="prog-label">F</span>
+          <div class="prog-bar"><div class="prog-fill fisico" style="width:${fis||0}%"></div></div>
+          <span class="prog-pct">${fmtPct(fis)}</span>
+        </div>
+      </td>
+      <td class="progress-col">
+        <div class="prog-row">
+          <span class="prog-label">$</span>
+          <div class="prog-bar"><div class="prog-fill financiero" style="width:${Math.min(fin||0,100)}%"></div></div>
+          <span class="prog-pct">${fmtPct(fin)}</span>
+        </div>
+      </td>
+      <td class="monto">${fmtM(o.pim_2026)}</td>
+      <td class="monto">${fmtM(o.devengado_2026)}</td>
+      <td>
+        <span class="pct-grande ${alerta==='rojo'?'':''}">
+          ${avPct!=null ? avPct.toFixed(1)+'%' : fmtPct(fin)}
+        </span>
+      </td>
+      <td>${badgeAlerta}</td>
+      <td>${estadoDot}</td>
+      <td>
+        <button class="btn-detalle" data-id="${o.id}">
+          ${puedeEditar ? 'Ver / Editar' : 'Ver detalle'}
+        </button>
+      </td>
+    </tr>`;
+  }).join('');
+
+  tbody.querySelectorAll('.btn-detalle').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = parseInt(btn.dataset.id);
+      const obra = obras.find(o=>o.id===id);
       
-      if (puedeEditar) {
-        document.getElementById('form-obra').style.display = 'block';
-        document.getElementById('detail-view').style.display = 'none';
-        document.getElementById('inp-fisico').value = obra.avance_fisico || 0;
-        document.getElementById('inp-financiero').value = obra.avance_financiero || 0;
-        document.getElementById('inp-situacion').value = obra.situacion || '';
-        document.getElementById('inp-critico').value = obra.punto_critico || '';
-      } else {
-        document.getElementById('form-obra').style.display = 'none';
-        document.getElementById('detail-view').style.display = 'block';
-        document.getElementById('detail-view').innerHTML = `
-          <p><strong>CUI:</strong> ${obra.cui}</p>
-          <p><strong>Costo:</strong> ${fmtM(obra.costo_proyecto)}</p>
-          <p><strong>Avance físico:</strong> ${obra.avance_fisico ? obra.avance_fisico.toFixed(1) + '%' : '—'}</p>
-          <p><strong>Avance financiero:</strong> ${obra.avance_financiero ? obra.avance_financiero.toFixed(1) + '%' : '—'}</p>
-          <p><strong>Situación:</strong> ${obra.situacion || '—'}</p>
-          <p><strong>Punto crítico:</strong> ${obra.punto_critico || '—'}</p>
-          <p style="margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border); color: var(--muted); font-size: 12px;">
-            Para editar, debes <a href="login.html" style="color: var(--accent);">iniciar sesión</a>
-          </p>
-        `;
-      }
-
-      document.getElementById('overlay').classList.add('open');
-    }
-
-    function cerrarModal() {
-      document.getElementById('overlay').classList.remove('open');
-      obraActual = null;
-    }
-
-    document.getElementById('modal-close').addEventListener('click', cerrarModal);
-    document.getElementById('btn-cancel').addEventListener('click', cerrarModal);
-    document.getElementById('overlay').addEventListener('click', e => {
-      if (e.target === document.getElementById('overlay')) cerrarModal();
-    });
-
-    document.getElementById('form-obra').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      if (!obraActual || !token) return;
-      
-      const btn = document.querySelector('#form-obra .btn-save');
-      btn.disabled = true;
-      btn.textContent = 'Guardando...';
-
-      try {
-        const res = await fetch(`${API}/api/obras/${obraActual.id}/avance`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-          body: JSON.stringify({
-            avance_fisico: parseFloat(document.getElementById('inp-fisico').value),
-            avance_financiero: parseFloat(document.getElementById('inp-financiero').value),
-            situacion: document.getElementById('inp-situacion').value,
-            punto_critico: document.getElementById('inp-critico').value
-          })
-        });
-        
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error);
-
-        const idx = obras.findIndex(o=>o.id===obraActual.id);
-        if (idx !== -1) obras[idx].alerta = data.alerta;
-        renderStats();
-        renderFiltros();
-        renderTabla();
-        cerrarModal();
-        toast('Registro guardado correctamente');
-      } catch(err) {
-        toast(err.message || 'Error al guardar', 'error');
-      } finally {
-        btn.disabled = false;
-        btn.textContent = 'Guardar registro';
-      }
-    });
-
-    // Cambiar contraseña
-    document.getElementById('btn-change-password').addEventListener('click', () => {
-      document.getElementById('overlay-password').classList.add('open');
-    });
-
-    document.getElementById('modal-close-password').addEventListener('click', () => {
-      document.getElementById('overlay-password').classList.remove('open');
-    });
-
-    document.getElementById('btn-cancel-password').addEventListener('click', () => {
-      document.getElementById('overlay-password').classList.remove('open');
-    });
-
-    document.getElementById('form-password').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const current = document.getElementById('inp-current-password').value;
-      const newPwd = document.getElementById('inp-new-password').value;
-      const confirm = document.getElementById('inp-confirm-password').value;
-
-      if (newPwd !== confirm) {
-        toast('Las contraseñas no coinciden', 'error');
+      // ← CAMBIO MÍNIMO: Si es público, pedir login
+      if (rolActivo === 'publico') {
+        window.location.href = 'login.html?redirect=index.html';
         return;
       }
-
-      try {
-        const res = await fetch(`${API}/api/auth/change-password`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-          body: JSON.stringify({ current_password: current, new_password: newPwd })
-        });
-
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error);
-
-        toast('Contraseña actualizada correctamente');
-        document.getElementById('overlay-password').classList.remove('open');
-      } catch(err) {
-        toast(err.message, 'error');
-      }
+      
+      abrirModal(obra);
     });
+  });
+}
 
-    function toast(msg, type = 'success') {
-      const el = document.createElement('div');
-      el.className = `toast ${type}`;
-      el.textContent = msg;
-      document.body.appendChild(el);
-      setTimeout(() => el.remove(), 3000);
-    }
+// ── MODAL ────────────────────────────────────────────────────
+function abrirModal(obra) {
+  obraActual = obra;
+  const puedeEditar = rolActivo !== 'publico';
 
-    // Inicializar
-    document.getElementById('btn-actualizar').addEventListener('click', cargarObras);
-    cargarObras();
-    setInterval(cargarObras, 5 * 60 * 1000);
-  </script>
+  document.getElementById('modal-title').textContent    = obra.nombre || 'Sin nombre';
+  document.getElementById('modal-meta').textContent     = `CUI ${obra.cui} · ${obra.contratista || 'Sin contratista registrado'}`;
+  document.getElementById('d-cui').textContent          = obra.cui;
+  document.getElementById('d-costo').textContent        = fmtM(obra.costo_proyecto);
+  document.getElementById('d-fisico').textContent       = fmtPct(obra.avance_fisico);
+  document.getElementById('d-financiero').textContent   = fmtPct(obra.avance_financiero);
+  document.getElementById('d-pim').textContent          = fmtM(obra.pim_2026);
+  document.getElementById('d-devengado').textContent    = fmtM(obra.devengado_2026);
+
+  document.getElementById('inp-fisico').value       = obra.avance_fisico    || 0;
+  document.getElementById('inp-financiero').value   = obra.avance_financiero|| 0;
+  document.getElementById('inp-situacion').value    = obra.situacion         || '';
+  document.getElementById('inp-critico').value      = obra.punto_critico     || '';
+  document.getElementById('inp-contratista').value  = obra.contratista       || '';
+
+  // Solo lectura si es vista pública
+  ['inp-fisico','inp-financiero','inp-situacion','inp-critico','inp-contratista'].forEach(id => {
+    document.getElementById(id).disabled = !puedeEditar;
+  });
+
+  document.getElementById('modal-edit-title').textContent =
+    puedeEditar ? 'Registro de seguimiento' : 'Información registrada';
+  document.getElementById('btn-save').style.display   = puedeEditar ? 'block' : 'none';
+  document.getElementById('btn-cancel').textContent   = puedeEditar ? 'Cancelar' : 'Cerrar';
+
+  document.getElementById('overlay').classList.add('open');
+}
+
+function cerrarModal() {
+  document.getElementById('overlay').classList.remove('open');
+  obraActual = null;
+}
+
+document.getElementById('modal-close').addEventListener('click', cerrarModal);
+document.getElementById('btn-cancel').addEventListener('click', cerrarModal);
+document.getElementById('overlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('overlay')) cerrarModal();
+});
+
+// ── GUARDAR ──────────────────────────────────────────────────
+document.getElementById('btn-save').addEventListener('click', async () => {
+  if (!obraActual) return;
+  const btn = document.getElementById('btn-save');
+  btn.disabled = true; btn.textContent = 'Guardando...';
+
+  const payload = {
+    avance_fisico:      parseFloat(document.getElementById('inp-fisico').value),
+    avance_financiero:  parseFloat(document.getElementById('inp-financiero').value),
+    situacion:          document.getElementById('inp-situacion').value,
+    punto_critico:      document.getElementById('inp-critico').value,
+    contratista:        document.getElementById('inp-contratista').value,
+  };
+
+  try {
+    const res  = await fetch(`${API}/api/obras/${obraActual.id}/avance`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+
+    // Actualizar local
+    const idx = obras.findIndex(o=>o.id===obraActual.id);
+    if (idx !== -1) obras[idx] = { ...obras[idx], ...payload, alerta: data.alerta };
+    renderStats(); renderFiltros(); renderTabla();
+    cerrarModal();
+    toast('Registro guardado correctamente');
+  } catch(err) {
+    toast(err.message || 'Error al guardar', 'error');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Guardar registro';
+  }
+});
+
+// ── INICIO ───────────────────────────────────────────────────
+cargarObras();
+setInterval(cargarObras, 5 * 60 * 1000);
+</script>
 </body>
 </html>
