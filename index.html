@@ -830,15 +830,8 @@ function renderTabla() {
   }).join('');
 
   tbody.querySelectorAll('.btn-detalle').forEach(btn => {
-btn.addEventListener('click', () => {
+    btn.addEventListener('click', () => {
       const id = parseInt(btn.dataset.id);
-      
-if (rolActivo === 'publico') {
-  localStorage.setItem('obraAAbrir', id);
-  window.location.href = 'login.html';
-  return;
-}
-      
       abrirModal(obras.find(o=>o.id===id));
     });
   });
@@ -925,15 +918,8 @@ document.getElementById('btn-save').addEventListener('click', async () => {
 });
 
 // ── INICIO ───────────────────────────────────────────────────
-// Verificar si hay obra para abrir después del login
-if (localStorage.getItem('obraAAbrir')) {
-  const obraId = parseInt(localStorage.getItem('obraAAbrir'));
-  localStorage.removeItem('obraAAbrir');
-  setTimeout(() => {
-    const obra = obras.find(o => o.id === obraId);
-    if (obra) abrirModal(obra);
-  }, 500);
-}
+cargarObras();
+setInterval(cargarObras, 5 * 60 * 1000);
 </script>
 </body>
 </html>
