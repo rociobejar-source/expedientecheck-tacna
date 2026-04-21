@@ -915,42 +915,49 @@ function cargarOpcionesFiltros() {
   const provincias = [...new Set(obras.map(o => o.provincia).filter(p => p))].sort();
   const municipalidades = [...new Set(obras.map(o => o.distrito).filter(d => d))].sort();
 
+  // ENTIDAD
   const selectEntidad = document.getElementById('filter-entidad');
   selectEntidad.innerHTML = '';
-
-  if (entidades.length > 1) {
-    selectEntidad.innerHTML += '<option value="">Todas las entidades</option>';
-  }
   entidades.forEach(e => {
     selectEntidad.innerHTML += `<option value="${e}">${e}</option>`;
   });
+  if (entidades.length === 1) {
+    selectEntidad.value = entidades[0];
+    filtroEntidad = entidades[0];
+  }
 
+  // DEPARTAMENTO
   const selectDepartamento = document.getElementById('filter-departamento');
   selectDepartamento.innerHTML = '';
-  if (departamentos.length > 1) {
-    selectDepartamento.innerHTML += '<option value="">Todos los departamentos</option>';
-  }
   departamentos.forEach(d => {
     selectDepartamento.innerHTML += `<option value="${d}">${d}</option>`;
   });
+  if (departamentos.length === 1) {
+    selectDepartamento.value = departamentos[0];
+    filtroDepartamento = departamentos[0];
+  }
 
+  // PROVINCIA
   const selectProvincia = document.getElementById('filter-provincia');
   selectProvincia.innerHTML = '';
-  if (provincias.length > 1) {
-    selectProvincia.innerHTML += '<option value="">Todas las provincias</option>';
-  }
   provincias.forEach(p => {
     selectProvincia.innerHTML += `<option value="${p}">${p}</option>`;
   });
+  if (provincias.length === 1) {
+    selectProvincia.value = provincias[0];
+    filtroProvincia = provincias[0];
+  }
 
+  // MUNICIPALIDAD
   const selectMunicipalidad = document.getElementById('filter-municipalidad');
   selectMunicipalidad.innerHTML = '';
-  if (municipalidades.length > 1) {
-    selectMunicipalidad.innerHTML += '<option value="">Todas las municipalidades</option>';
-  }
   municipalidades.forEach(m => {
     selectMunicipalidad.innerHTML += `<option value="${m}">${m}</option>`;
   });
+  if (municipalidades.length === 1) {
+    selectMunicipalidad.value = municipalidades[0];
+    filtroMunicipalidad = municipalidades[0];
+  }
 }
 
 // ── PRE-SELECCIONAR FILTROS DE TACNA ──────────────────────————
