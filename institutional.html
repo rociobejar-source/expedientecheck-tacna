@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>ExpedienteCheck · Monitor de Obras MPT Tacna</title>
+  <title>ExpedienteCheck · Gestión Municipal</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
@@ -524,6 +524,14 @@
       margin-bottom: 20px;
       font-weight: 500;
     }
+
+    /* Vista Institucional - Ocultar municipalidad selector */
+    #filter-municipalidad {
+      display: none !important;
+    }
+    .filter-group:has(#filter-municipalidad) {
+      display: none !important;
+    }
   </style>
 </head>
 <body>
@@ -531,17 +539,16 @@
 <!-- HEADER -->
 <header>
   <span class="logo">ExpedienteCheck</span>
-  <span class="header-right" id="header-rol">Vista ciudadana</span>
+  <div class="header-center">
+    <span style="color: #9ca3af; font-size: 12px;" id="municipalidad-header">Municipalidad</span>
+  </div>
+  <div class="header-right">
+    <span id="usuario-nombre" style="color: #9ca3af; font-size: 12px; margin-right: 16px;">Sesión activa</span>
+    <button id="btn-cerrar-sesion" style="background: transparent; border: 1px solid #9ca3af; color: #9ca3af; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; transition: all 0.2s;">Cerrar sesión</button>
+  </div>
 </header>
 
-<!-- ROLE BAR -->
-<div class="role-bar">
-  <span class="role-label">Ver como:</span>
-  <button class="role-btn active" data-rol="ciudadana">Vista ciudadana</button>
-  <button class="role-btn" data-rol="institucional" id="btn-institucional">Vista institucional 🔒</button>
-</div>
-
-<!-- MAIN -->
+<!-- MAIN (sin Role Bar en Vista Institucional) -->
 <main>
   <div class="public-note">
     ℹ️ <span id="public-note-text">Data de ejecución de inversiones sincronizada diariamente con la información del SSI-MEF e InfoObras</span>
@@ -740,24 +747,54 @@
 <div id="toast"></div>
 
 <script>
-// ── CONFIG ────────────────────────────────────────────────────
+// ── AUTENTICACIÓN REQUERIDA ───────────────────────────────────
+(function() {
+  const token = localStorage.getItem('expediente_token');
+  const userStr = localStorage.getItem('expediente_user');
+  if (!token || !userStr) {
+    window.location.href = 'login.html?redirect=institucional';
+    return;
+  }
+  const user = JSON.parse(userStr);
+  if (!user.municipalidad) {
+    localStorage.removeItem('expediente_token');
+    localStorage.removeItem('expediente_user');
+    window.location.href = 'login.html?redirect=institucional';
+    return;
+  }
+  window.userAutenticado = user;
+  window.municipalidadUsuario = user.municipalidad;
+})();
+
+// CONFIG ────────────────────────────────────────────────────
 const API = 'https://api.expedientecheck.com';
 
 // ── ESTADO ───────────────────────────────────────────────────
 let obras              = [];
 let filtro             = 'todas';
-let rolActivo          = 'ciudadana';
+let rolActivo          = 'institucional';  // Siempre institucional
 let obraActual         = null;
 let filtroEntidad      = '';
 let filtroDepartamento = '';
 let filtroProvincia    = '';
-let filtroMunicipalidad = '';
+let filtroMunicipalidad = window.municipalidadUsuario || ''; // Filtro automático a municipalidad del usuario
 let filtroEstado       = '';
 let municipalidadSelected = 'tacna';
 
 // ── FECHA ────────────────────────────────────────────────────
 document.getElementById('fecha-hoy').textContent =
   new Date().toLocaleDateString('es-PE', { day: 'numeric', month: 'long', year: 'numeric' });
+
+// ── INICIALIZAR HEADER INSTITUCIONAL ───────────────────────
+document.getElementById('municipalidad-header').textContent = window.municipalidadUsuario || 'Municipalidad';
+document.getElementById('usuario-nombre').textContent = `${window.userAutenticado?.email || 'Usuario'} •`;
+
+// Botón Cerrar Sesión
+document.getElementById('btn-cerrar-sesion').addEventListener('click', () => {
+  localStorage.removeItem('expediente_token');
+  localStorage.removeItem('expediente_user');
+  window.location.href = 'index.html';
+});
 
 // ── UTILS ────────────────────────────────────────────────────
 const fmtM  = v => {
@@ -823,7 +860,7 @@ async function cargarObras() {
   icon.textContent = '↻';
 
   try {
-    const res  = await fetch(`${API}/api/obras`);
+    const res  = await fetch(`${API}/api/obras?municipalidad=${municipalidadSelected}`);
     const data = await res.json();
     obras = data.obras || [];
 
@@ -1114,22 +1151,7 @@ function renderTabla() {
   tbody.querySelectorAll('.btn-detalle').forEach(btn => {
     btn.addEventListener('click', () => {
       const id = parseInt(btn.dataset.id);
-      const obra = obras.find(o=>o.id===id);
-      if (!obra) return;
-
-      // Verificar si hay sesión activa
-      const token = localStorage.getItem('expediente_token');
-      const cui = obra.cui;
-
-      if (token) {
-        // Guardar la obra completa en localStorage para que fichatecnicaCUI la use
-        localStorage.setItem('obra_actual', JSON.stringify(obra));
-        // Hay sesión activa → ir directo a fichatecnicaCUI.html
-        window.location.href = `fichatecnicaCUI.html?cui=${cui}`;
-      } else {
-        // No hay sesión → ir a login con parámetro cui
-        window.location.href = `login.html?cui=${cui}`;
-      }
+      abrirModal(obras.find(o=>o.id===id));
     });
   });
 }
@@ -1150,49 +1172,39 @@ function mostrarModalBloqueado(obra) {
   obraActual = obra;
 
   document.getElementById('modal-title').textContent    = obra.nombre || 'Sin nombre';
-  document.getElementById('modal-meta').textContent     = `CUI ${obra.cui}`;
+  document.getElementById('modal-meta').textContent     = `CUI ${obra.cui} · ${obra.contratista || 'Sin contratista registrado'}`;
+  document.getElementById('d-cui').textContent          = obra.cui;
+  document.getElementById('d-costo').textContent        = obra.costo_proyecto ? 'S/ ' + Number(obra.costo_proyecto).toLocaleString('es-PE', {minimumFractionDigits:2, maximumFractionDigits:2}) : '—';
+  document.getElementById('d-fisico').textContent       = fmtPct(obra.avance_fisico);
+  document.getElementById('d-financiero').textContent   = fmtPct(obra.avance_financiero);
+  document.getElementById('d-pim').textContent          = fmtM(obra.pim_2026);
+  document.getElementById('d-devengado').textContent    = fmtM(obra.devengado_2026);
 
-  // Ocultar toda la grid de información
-  document.querySelector('.info-grid').style.display = 'none';
+  // Limpiar campos de edición
+  document.getElementById('inp-fisico').value       = '';
+  document.getElementById('inp-financiero').value   = '';
+  document.getElementById('inp-situacion').value    = '';
+  document.getElementById('inp-critico').value      = '';
+  document.getElementById('inp-contratista').value  = '';
 
-  // Ocultar el divider
-  document.querySelector('.divider').style.display = 'none';
-
-  // Ocultar título de edición
-  document.getElementById('modal-edit-title').style.display = 'none';
-
-  // Ocultar campos de edición excepto fisico, financiero y contratista
-  ['inp-situacion','inp-critico'].forEach(id => {
-    const field = document.getElementById(id).closest('.field');
-    if (field) field.style.display = 'none';
+  // Deshabilitar todos los campos
+  ['inp-fisico','inp-financiero','inp-situacion','inp-critico','inp-contratista'].forEach(id => {
+    document.getElementById(id).disabled = true;
   });
 
-  // Mostrar solo avance físico y financiero (pero deshabilitados)
-  document.getElementById('inp-fisico').value = obra.avance_fisico || 0;
-  document.getElementById('inp-fisico').disabled = true;
-  document.getElementById('inp-fisico').closest('.field').style.display = 'block';
-
-  document.getElementById('inp-financiero').value = obra.avance_financiero || 0;
-  document.getElementById('inp-financiero').disabled = true;
-  document.getElementById('inp-financiero').closest('.field').style.display = 'block';
-
-  // Mostrar campo de contratista (para SEACE en futuro)
-  document.getElementById('inp-contratista').value = obra.contratista || '';
-  document.getElementById('inp-contratista').disabled = true;
-  document.getElementById('inp-contratista').closest('.field').style.display = 'block';
-
+  document.getElementById('modal-edit-title').textContent = 'Información registrada';
   document.getElementById('btn-save').style.display = 'none';
   document.getElementById('btn-cancel').textContent = 'Cerrar';
 
   // Mostrar mensaje de bloqueo
-  const fieldRow = document.querySelector('.field-row');
+  const infoGrid = document.querySelector('.info-grid');
   if (!document.querySelector('.modal-bloqueo-msg')) {
     const msg = document.createElement('div');
     msg.className = 'modal-bloqueo-msg';
     msg.innerHTML = `
-      <div style="background: var(--rojo-lt); border: 1px solid #f5c6c2; border-radius: 8px; padding: 14px; margin-top: 20px; margin-bottom: 0; color: var(--rojo); font-size: 13px; text-align: center;">
+      <div style="background: var(--rojo-lt); border: 1px solid #f5c6c2; border-radius: 8px; padding: 14px; margin-bottom: 20px; color: var(--rojo); font-size: 13px; text-align: center;">
         <strong>📌 Acceso limitado</strong><br/>
-        Para editar información, accede a <strong>Vista institucional</strong>
+        Para editar información y acceder a más detalles, accede a <strong>Vista institucional</strong>
         <div style="margin-top: 10px;">
           <button id="btn-ir-institucional" style="background: var(--rojo); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; transition: opacity 0.2s;">
             Ir a Vista institucional
@@ -1200,7 +1212,7 @@ function mostrarModalBloqueado(obra) {
         </div>
       </div>
     `;
-    fieldRow.parentElement.appendChild(msg);
+    infoGrid.parentElement.insertBefore(msg, infoGrid);
 
     // Event listener para botón
     document.getElementById('btn-ir-institucional').addEventListener('click', () => {

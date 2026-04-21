@@ -1,0 +1,1089 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>ExpedienteCheck · Ficha de Monitoreo</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  // Protección de autenticación - ejecutar antes de cargar el contenido
+  (function() {
+    const token = localStorage.getItem('expediente_token');
+    if (!token) {
+      const urlParams = new URLSearchParams(window.location.search);
+      const cui = urlParams.get('cui');
+      window.location.href = 'login.html' + (cui ? `?cui=${cui}` : '');
+    }
+  })();
+
+  // Estado global
+  let obraData = null;
+  let cuiActual = null;
+
+
+</script>
+<style>
+:root {
+  --navy:#0B1F3A; --navy2:#1E3F6B; --navy3:#0A1628;
+  --gold:#C9952A; --gold2:#E8B84B; --gold-lt:#FEF9EC;
+  --green:#0D7A5F; --green2:#0A5F4A; --green-lt:#E8F7F3;
+  --red:#B91C1C; --red-lt:#FEE2E2;
+  --amber:#B45309; --amber-lt:#FEF3C7;
+  --blue:#1D4ED8; --blue-lt:#EFF6FF;
+  --bg:#F2EFE8; --surface:#FAFAF7; --surface2:#F5F2EB;
+  --border:#E3DED4; --border2:#CCC7B8;
+  --text:#1A1A1A; --muted:#6B6560; --muted2:#9C9690;
+  --sans:'DM Sans',sans-serif; --mono:'DM Mono',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);font-family:var(--sans);font-size:13px;color:var(--text);min-height:100vh}
+
+/* ── TOP BAR ── */
+.topbar{background:var(--navy3);height:52px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;position:sticky;top:0;z-index:50;border-bottom:1px solid rgba(255,255,255,.06)}
+.tb-l{display:flex;align-items:center;gap:12px}
+.tb-logo{background:linear-gradient(135deg,var(--gold),var(--gold2));border-radius:6px;padding:3px 10px;font-size:11px;font-weight:700;color:var(--navy)}
+.tb-title{color:rgba(255,255,255,.8);font-size:13px;font-weight:500}
+.tb-cui{font-family:var(--mono);font-size:10px;color:rgba(255,255,255,.35);background:rgba(255,255,255,.06);padding:2px 8px;border-radius:4px}
+.tb-r{display:flex;align-items:center;gap:8px}
+.btn-dl{background:var(--gold);border:none;border-radius:8px;padding:7px 16px;font-size:12px;font-weight:700;color:var(--navy);cursor:pointer;font-family:var(--sans);display:flex;align-items:center;gap:6px;transition:opacity .15s}
+.btn-dl:hover{opacity:.88}
+
+/* ── PHASE SELECTOR ── */
+.phase-bar{display:flex;border-bottom:2px solid var(--border);background:var(--surface);padding:0 24px}
+.phase-tab{padding:12px 20px;font-size:13px;font-weight:600;cursor:pointer;border-bottom:3px solid transparent;color:var(--muted);transition:all .18s;display:flex;align-items:center;gap:8px;margin-bottom:-2px}
+.phase-tab:hover{color:var(--text)}
+.phase-tab.et.active{color:var(--gold);border-bottom-color:var(--gold)}
+.phase-tab.ej.active{color:var(--green);border-bottom-color:var(--green)}
+.phase-dot{width:8px;height:8px;border-radius:50%}
+.pd-et{background:var(--gold)} .pd-ej{background:var(--green)}
+.phase-count{font-size:10px;background:var(--surface2);border-radius:10px;padding:1px 7px;color:var(--muted2);font-weight:500}
+
+/* ── LAYOUT ── */
+.layout{display:grid;grid-template-columns:1fr 400px;min-height:calc(100vh - 52px - 47px);gap:0}
+.main-panel{padding:24px;overflow-y:auto;border-right:1px solid var(--border)}
+.side-panel{padding:20px;background:var(--surface);overflow-y:auto}
+
+/* ── SECTION HEADER ── */
+.sec-hdr{display:flex;align-items:center;gap:10px;margin-bottom:16px}
+.sec-num{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0}
+.sn-et{background:var(--gold-lt);color:var(--gold)} .sn-ej{background:var(--green-lt);color:var(--green)}
+.sec-title{font-size:15px;font-weight:700;color:var(--navy);letter-spacing:-.2px}
+.sec-tag{font-size:10px;font-weight:600;padding:2px 9px;border-radius:10px}
+.st-done{background:var(--green-lt);color:var(--green)}
+.st-prog{background:var(--amber-lt);color:var(--amber)}
+
+/* ── INFO CARDS ── */
+.ig2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
+.ig3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px}
+.ig4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-bottom:14px}
+.ic{background:var(--bg);border-radius:7px;padding:9px 11px}
+.ic-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted2);margin-bottom:3px}
+.ic-val{font-size:12px;font-weight:600;color:var(--text);line-height:1.3}
+.ic-val.mono{font-family:var(--mono);font-size:11px}
+
+/* ── SIT BOX ── */
+.sitbox{border-radius:8px;padding:12px 14px;margin-bottom:14px}
+.sb-et{background:var(--gold-lt);border:1.5px solid rgba(201,149,42,.25)}
+.sb-ej{background:var(--green-lt);border:1.5px solid rgba(13,122,95,.2)}
+.sb-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px}
+.sb-et .sb-lbl{color:var(--gold)} .sb-ej .sb-lbl{color:var(--green2)}
+.sb-text{font-size:12px;line-height:1.65;color:var(--text)}
+
+/* ── TABLE ── */
+.tbl{width:100%;border-collapse:collapse;font-size:11px;border-radius:8px;overflow:hidden;border:1.5px solid var(--border)}
+.tbl thead th{background:var(--navy);color:rgba(255,255,255,.8);font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;padding:8px 10px;text-align:left;white-space:nowrap}
+.tbl tbody td{padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:middle}
+.tbl tbody tr:last-child td{border-bottom:none}
+.tbl tbody tr:nth-child(even) td{background:#FAFAF7}
+.tbl tbody tr.hl td{background:var(--green-lt);font-weight:600}
+.tbl-wrap{overflow-x:auto;margin-bottom:14px}
+
+/* Progress */
+.pb{display:flex;align-items:center;gap:6px}
+.pbt{flex:1;height:6px;background:var(--border);border-radius:99px;overflow:hidden;min-width:60px}
+.pbf{height:100%;border-radius:99px}
+.pbf-g{background:linear-gradient(90deg,var(--gold),var(--gold2))}
+.pbf-gr{background:var(--green)}
+.pbf-n{background:var(--navy)}
+.pbf-a{background:var(--amber)}
+.pbp{font-family:var(--mono);font-size:10px;color:var(--muted);min-width:34px;text-align:right}
+
+/* Chips */
+.chip{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600}
+.chip::before{content:'';width:5px;height:5px;border-radius:50%}
+.cg{background:var(--green-lt);color:var(--green)} .cg::before{background:var(--green)}
+.cy{background:var(--amber-lt);color:var(--amber)} .cy::before{background:var(--amber)}
+.cr{background:var(--red-lt);color:var(--red)} .cr::before{background:var(--red)}
+
+/* ── GANTT ── */
+.gantt-wrap{overflow-x:auto;border:1.5px solid var(--border);border-radius:8px;margin-bottom:14px}
+.gantt-tbl{min-width:640px;width:100%;border-collapse:collapse;font-size:10px}
+.gantt-tbl th{background:var(--navy2);color:rgba(255,255,255,.7);padding:5px 4px;text-align:center;font-size:8px;font-weight:600;letter-spacing:.3px;border-right:1px solid rgba(255,255,255,.08)}
+.gantt-tbl th.gh-label{text-align:left;min-width:150px;padding:5px 8px;background:var(--navy)}
+.gantt-tbl th.gh-mes{background:rgba(255,255,255,.05);font-size:9px;letter-spacing:.5px;border-bottom:1px solid rgba(255,255,255,.1)}
+.gantt-tbl td{padding:3px 4px;border-bottom:1px solid var(--border);border-right:1px solid rgba(0,0,0,.05)}
+.gantt-tbl tr:last-child td{border-bottom:none}
+.gantt-tbl td.tl{font-size:10px;padding:4px 8px;background:var(--bg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px}
+.gantt-tbl td.tl.cat{font-weight:700;color:var(--navy);background:var(--gold-lt);font-size:10px}
+.bar{width:100%;border-radius:3px;height:12px}
+.bar-done{background:var(--gold)}
+.bar-empty{background:transparent}
+.gantt-legend{display:flex;gap:14px;font-size:10px;color:var(--muted);margin-top:6px}
+.gl{display:flex;align-items:center;gap:4px}
+.gl-dot{width:12px;height:8px;border-radius:2px}
+
+/* ── EJ FORM (side panel) ── */
+.sp-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.sp-title::after{content:'';flex:1;height:1px;background:var(--border)}
+.field{margin-bottom:10px}
+.field label{display:block;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted2);margin-bottom:4px}
+.field input,.field textarea,.field select{width:100%;background:var(--bg);border:1.5px solid var(--border);border-radius:7px;padding:7px 10px;font-size:12px;font-family:var(--sans);color:var(--text);outline:none;transition:border-color .18s}
+.field input:focus,.field textarea:focus,.field select:focus{border-color:var(--green)}
+.field textarea{resize:vertical;min-height:72px;line-height:1.5}
+.field input:disabled{background:var(--surface2);color:var(--muted);cursor:not-allowed}
+.fg2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.fg3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.hint{font-size:10px;color:var(--muted2);margin-top:2px}
+
+/* Save row */
+.save-row{background:var(--surface);border-top:1px solid var(--border);padding:12px 20px;position:sticky;bottom:0;display:flex;gap:8px;align-items:center}
+.btn-save{background:var(--green);border:none;border-radius:8px;padding:8px 18px;font-size:12px;font-weight:700;color:#fff;cursor:pointer;font-family:var(--sans);transition:opacity .15s}
+.btn-save:hover{opacity:.88}
+.btn-sec{background:transparent;border:1.5px solid var(--border2);border-radius:8px;padding:7px 14px;font-size:12px;font-weight:500;color:var(--muted);cursor:pointer;font-family:var(--sans);transition:all .15s}
+.btn-sec:hover{border-color:var(--text);color:var(--text)}
+.saved-badge{font-size:11px;color:var(--green);font-weight:600;opacity:0;transition:opacity .3s}
+.saved-badge.show{opacity:1}
+
+/* Stats live */
+.live-stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
+.ls{background:var(--bg);border-radius:8px;padding:10px 12px;border:1.5px solid var(--border)}
+.ls-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted2);margin-bottom:3px}
+.ls-val{font-size:20px;font-weight:700;letter-spacing:-.5px;line-height:1}
+.ls-sub{font-size:10px;color:var(--muted);margin-top:2px}
+
+/* Brecha indicator */
+.brecha-box{border-radius:8px;padding:10px 14px;margin-bottom:12px;display:flex;align-items:center;gap:12px}
+.bb-ok{background:var(--green-lt);border:1.5px solid rgba(13,122,95,.2)}
+.bb-warn{background:var(--amber-lt);border:1.5px solid rgba(180,83,9,.2)}
+.bb-crit{background:var(--red-lt);border:1.5px solid rgba(185,28,28,.2)}
+.bb-icon{font-size:18px;flex-shrink:0}
+.bb-text{font-size:12px;font-weight:600}
+.bb-sub{font-size:11px;color:var(--muted);margin-top:2px}
+
+/* Risk cards */
+.rcard{border:1.5px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:8px}
+.rc-hdr{display:flex;align-items:center;gap:6px;margin-bottom:4px}
+.rc-badge{font-size:9px;font-weight:700;padding:2px 7px;border-radius:4px;text-transform:uppercase;letter-spacing:.3px}
+.rc-a{background:var(--red-lt);color:var(--red)} .rc-m{background:var(--amber-lt);color:var(--amber)}
+.rc-desc{font-size:11px;font-weight:600;margin-bottom:2px}
+.rc-meta{font-size:10px;color:var(--muted)}
+.rc-acuerdo{font-size:10px;color:var(--navy);font-weight:500;margin-top:4px;border-top:1px dashed var(--border);padding-top:4px}
+
+/* Pendientes */
+.pend-row{display:flex;justify-content:space-between;align-items:flex-start;padding:6px 0;border-bottom:1px solid var(--border);font-size:11px}
+.pend-row:last-child{border-bottom:none}
+.pid{font-family:var(--mono);font-size:9px;color:var(--muted2);min-width:80px}
+.pmonto{font-family:var(--mono);font-weight:600;color:var(--navy);white-space:nowrap;margin-left:8px}
+
+/* Rol banner */
+.rol-banner{display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:8px;font-size:11px;font-weight:500;margin-bottom:12px}
+.rb-editor{background:var(--blue-lt);border:1px solid #93C5FD;color:var(--blue)}
+.rb-sup{background:var(--green-lt);border:1px solid #6EE7B7;color:var(--green2)}
+.rb-obs{background:var(--surface2);border:1px solid var(--border2);color:var(--muted)}
+
+/* Prog mensual brecha coloring */
+.br-pos{color:var(--green);font-weight:700} .br-neg{color:var(--red);font-weight:700}
+.tr-active td{background:var(--green-lt)!important}
+
+/* Hide/show */
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="tb-l">
+    <div class="tb-logo">EC</div>
+    <span class="tb-title">Ficha de Monitoreo</span>
+    <span class="tb-cui">CUI 2591893</span>
+  </div>
+  <div class="tb-r">
+    <select id="rol-sel" onchange="cambiarRol(this.value)" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:10px;padding:4px 10px;font-size:11px;color:rgba(255,255,255,.85);font-family:var(--sans);cursor:pointer;outline:none">
+      <option value="residente">🏗️ Residente</option>
+      <option value="especialista">🔧 Especialista</option>
+      <option value="supervisor">✅ Supervisor</option>
+      <option value="observador">👁 Observador</option>
+    </select>
+    <button class="btn-dl" onclick="descargarFicha()">↓ Descargar ficha completa</button>
+  </div>
+</div>
+
+<!-- PHASE TABS -->
+<div class="phase-bar">
+  <div class="phase-tab et active" onclick="setPhase('et',this)">
+    <div class="phase-dot pd-et"></div>
+    Expediente Técnico
+    <span class="phase-count">100% completado</span>
+  </div>
+  <div class="phase-tab ej" onclick="setPhase('ej',this)">
+    <div class="phase-dot pd-ej"></div>
+    Ejecución de Obra
+    <span class="phase-count" id="ej-pct-tab">56.4% físico</span>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════ -->
+<!-- VISTA: EXPEDIENTE TÉCNICO                  -->
+<!-- ══════════════════════════════════════════ -->
+<div id="view-et" class="layout">
+
+  <!-- MAIN: ET info + Gantt -->
+  <div class="main-panel">
+    <div class="sec-hdr">
+      <div class="sec-num sn-et">I</div>
+      <div class="sec-title">Elaboración del Expediente Técnico</div>
+      <span class="sec-tag st-done" id="et-status">⏳ Sin información</span>
+    </div>
+
+    <div class="ig4" id="et-info-grid" style="display:none">
+      <div class="ic"><div class="ic-lbl">Abreviación</div><div class="ic-val" id="et-nombre">—</div></div>
+      <div class="ic"><div class="ic-lbl">Situación final</div><div class="ic-val" id="et-situacion">—</div></div>
+      <div class="ic"><div class="ic-lbl">Fecha inicio ET</div><div class="ic-val mono" id="et-inicio">—</div></div>
+      <div class="ic"><div class="ic-lbl">Fecha fin ET</div><div class="ic-val mono" id="et-fin">—</div></div>
+    </div>
+
+    <div style="padding:20px;text-align:center;color:var(--muted);background:var(--surface2);border-radius:8px;margin-bottom:14px" id="et-empty-state">
+      <p style="font-size:13px;margin-bottom:8px">📋 No hay información de Expediente Técnico registrada para este proyecto</p>
+      <p style="font-size:11px;color:var(--muted2)">Los datos de ET se cargarán cuando estén disponibles en el sistema</p>
+    </div>
+  </div>
+
+  <!-- SIDE: ET read-only summary -->
+  <div class="side-panel">
+    <div class="rol-banner rb-editor" id="et-rol-banner">✏️ Residente — vista de Expediente Técnico</div>
+    <div class="sp-title">Resumen de avance</div>
+    <div class="live-stats" id="et-stats" style="display:none">
+      <div class="ls"><div class="ls-lbl">Avance ET</div><div class="ls-val" id="et-avance" style="color:var(--gold)">—</div><div class="ls-sub">Porcentaje</div></div>
+      <div class="ls"><div class="ls-lbl">Estado</div><div class="ls-val" id="et-estado-val" style="color:var(--green)">—</div><div class="ls-sub">Situación</div></div>
+    </div>
+
+    <div style="padding:16px;background:var(--surface2);border-radius:8px;font-size:11px;color:var(--muted);text-align:center" id="et-empty-stats">
+      <p>Sin información de Expediente Técnico</p>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════ -->
+<!-- VISTA: EJECUCIÓN DE OBRA                   -->
+<!-- ══════════════════════════════════════════ -->
+<div id="view-ej" class="hidden" style="display:none">
+<div class="layout">
+
+  <!-- MAIN: EJ display (se actualiza en tiempo real) -->
+  <div class="main-panel" id="ej-display">
+    <div class="sec-hdr">
+      <div class="sec-num sn-ej">II</div>
+      <div class="sec-title">Ejecución de Obra — Estado al <span id="d-fecha-corte">16/04/2026</span></div>
+      <span class="sec-tag st-prog" id="d-estado-tag">⚡ En ejecución</span>
+    </div>
+
+    <!-- Info del contrato -->
+    <div class="ig4" style="margin-bottom:14px">
+      <div class="ic"><div class="ic-lbl">N° de contrato</div><div class="ic-val" id="d-contrato">N° 017-2025-MPT</div></div>
+      <div class="ic"><div class="ic-lbl">Contratista</div><div class="ic-val" id="d-contratista">Consorcio Tacna</div></div>
+      <div class="ic"><div class="ic-lbl">Residente de obra</div><div class="ic-val" id="d-residente">Gilmer Ccallata</div></div>
+      <div class="ic"><div class="ic-lbl">Inspector</div><div class="ic-val" id="d-inspector">Igor Berrios</div></div>
+      <div class="ic"><div class="ic-lbl">Inicio contractual</div><div class="ic-val mono" id="d-fi">18/06/2025</div></div>
+      <div class="ic"><div class="ic-lbl">Fin contractual</div><div class="ic-val mono" id="d-ff">31/03/2026</div></div>
+      <div class="ic"><div class="ic-lbl">PIM 2026</div><div class="ic-val mono" id="d-inv-aprobada">—</div></div>
+      <div class="ic"><div class="ic-lbl">Costo de obra</div><div class="ic-val mono" id="d-costo-obra">—</div></div>
+      <div class="ic"><div class="ic-lbl">Saldo por culminar</div><div class="ic-val mono" id="d-saldo-pendiente">—</div></div>
+    </div>
+
+    <!-- Avances visuales live -->
+    <div class="ig3" style="margin-bottom:14px">
+      <div class="ic" style="border:1.5px solid rgba(13,122,95,.3)">
+        <div class="ic-lbl" style="color:var(--green)">Avance físico acum.</div>
+        <div style="font-size:26px;font-weight:700;color:var(--green);letter-spacing:-.5px;margin:5px 0 5px" id="d-fis-pct">56.4%</div>
+        <div class="pb"><div class="pbt" style="height:8px"><div class="pbf pbf-gr" id="d-fis-bar" style="width:56.4%"></div></div></div>
+        <div style="font-size:10px;color:var(--muted);margin-top:4px" id="d-fis-m">S/ 2,189,918</div>
+      </div>
+      <div class="ic" style="border:1.5px solid rgba(11,31,58,.15)">
+        <div class="ic-lbl">Certif. / devengado</div>
+        <div style="font-size:26px;font-weight:700;color:var(--navy);letter-spacing:-.5px;margin:5px 0 5px" id="d-cert-pct">50.4%</div>
+        <div class="pb"><div class="pbt" style="height:8px"><div class="pbf pbf-n" id="d-cert-bar" style="width:50.4%"></div></div></div>
+        <div style="font-size:10px;color:var(--muted);margin-top:4px" id="d-cert-m">S/ 1,956,980</div>
+      </div>
+      <div class="ic" style="border:1.5px solid rgba(180,83,9,.2)">
+        <div class="ic-lbl" style="color:var(--amber)">Programado actualiz.</div>
+        <div style="font-size:26px;font-weight:700;color:var(--amber);letter-spacing:-.5px;margin:5px 0 5px" id="d-prog-pct">65.9%</div>
+        <div class="pb"><div class="pbt" style="height:8px"><div class="pbf pbf-a" id="d-prog-bar" style="width:65.9%"></div></div></div>
+        <div style="font-size:10px;color:var(--muted);margin-top:4px" id="d-prog-m">S/ 2,557,867</div>
+      </div>
+    </div>
+
+    <!-- Brecha live -->
+    <div class="brecha-box bb-warn" id="brecha-box">
+      <div class="bb-icon" id="brecha-icon">⚠</div>
+      <div>
+        <div class="bb-text">Brecha físico–certificado: <span id="d-brecha">6.0 pp</span></div>
+        <div class="bb-sub" id="brecha-desc">Requiere atención — diferencia entre avance físico y certificación</div>
+      </div>
+    </div>
+
+    <!-- Situación actual -->
+    <div class="sitbox sb-ej" style="margin-bottom:14px">
+      <div class="sb-lbl">Situación actual de la obra</div>
+      <div class="sb-text" id="d-situacion">TRABAJO DE CONCRETO SIMPLE Y CONCRETO ARMADO: Se están realizando la ejecución de concreto en gradería, columnas de la gradería, muros reforzados en la elevación 1 y 2. En la elevación 4, excavación de cimentación.</div>
+    </div>
+
+    <!-- Programación mensual -->
+    <div style="margin-bottom:8px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);display:flex;justify-content:space-between;align-items:center">
+      <span>Programación y avances mensuales</span>
+      <button onclick="mostrarFormAvancesMensuales()" class="btn-save" style="padding:4px 10px;font-size:10px;margin:0" id="btn-add-mes-top">+ Agregar</button>
+    </div>
+    <div id="prog-tabla-container" class="tbl-wrap" style="display:none">
+      <table class="tbl" id="prog-tabla">
+        <thead><tr><th>Período</th><th>Prog. base acum.</th><th>Prog. actual. acum.</th><th>Av. físico acum.</th><th>Certif. acum.</th><th>Brecha</th></tr></thead>
+        <tbody id="prog-tbody"></tbody>
+      </table>
+    </div>
+    <div id="prog-empty-msg" style="padding:16px;background:var(--surface2);border-radius:8px;text-align:center;color:var(--muted);font-size:11px">
+      <p style="margin-bottom:8px">Sin datos de avances mensuales. Comience a registrar datos mensuales.</p>
+      <button onclick="mostrarFormAvancesMensuales()" class="btn-save" style="padding:6px 14px;font-size:10px">+ Agregar avance mensual</button>
+    </div>
+
+    <!-- Riesgos -->
+    <div style="margin-bottom:8px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);display:flex;justify-content:space-between;align-items:center">
+      <span>Riesgos identificados</span>
+      <button onclick="mostrarFormRiesgos()" class="btn-save" style="padding:4px 10px;font-size:10px;margin:0" id="btn-add-riesgo">+ Agregar</button>
+    </div>
+    <div id="riesgos-list">
+      <div style="padding:16px;background:var(--surface2);border-radius:8px;text-align:center;color:var(--muted);font-size:11px">
+        <p style="margin-bottom:8px">Sin riesgos registrados</p>
+        <button onclick="mostrarFormRiesgos()" class="btn-save" style="padding:6px 14px;font-size:10px">+ Agregar riesgo</button>
+      </div>
+    </div>
+
+    <!-- Trabajos pendientes -->
+    <div style="margin:14px 0 8px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);display:flex;justify-content:space-between;align-items:center">
+      <span>Trabajos pendientes</span>
+      <button onclick="mostrarFormTrabajos()" class="btn-save" style="padding:4px 10px;font-size:10px;margin:0" id="btn-add-trabajo">+ Agregar</button>
+    </div>
+    <div id="trabajos-list" style="border:1.5px solid var(--border);border-radius:8px;padding:10px 12px">
+      <div style="padding:12px;background:var(--surface2);border-radius:8px;text-align:center;color:var(--muted);font-size:11px">
+        <p style="margin-bottom:8px">Sin trabajos pendientes registrados</p>
+        <button onclick="mostrarFormTrabajos()" class="btn-save" style="padding:6px 14px;font-size:10px">+ Agregar trabajo</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SIDE: EJ editable form -->
+  <div class="side-panel" id="ej-side" style="display:flex;flex-direction:column">
+    <div style="flex:1;overflow-y:auto;padding-bottom:0">
+      <div class="rol-banner rb-editor" id="ej-rol-banner">✏️ Residente — edita los campos y ve el resultado en vivo</div>
+
+      <!-- Avances -->
+      <div class="sp-title">Avances actualizados</div>
+      <div class="fg3" style="margin-bottom:10px">
+        <div class="field"><label>Av. físico (%)</label><input type="number" id="f-fis" min="0" max="100" step="0.1" oninput="actualizar()"/></div>
+        <div class="field"><label>Monto físico (S/)</label><input type="number" id="f-mfis" min="0" oninput="actualizar()"/></div>
+        <div class="field"><label>Certif. acum. (%)</label><input type="number" id="f-cert" min="0" max="100" step="0.1" oninput="actualizar()"/></div>
+        <div class="field"><label>Monto certif. (S/)</label><input type="number" id="f-mcert" min="0" oninput="actualizar()"/></div>
+        <div class="field"><label>Prog. actual. (%)</label><input type="number" id="f-prog" min="0" max="100" step="0.1" oninput="actualizar()"/></div>
+        <div class="field"><label>Monto prog. (S/)</label><input type="number" id="f-mprog" min="0" oninput="actualizar()"/></div>
+      </div>
+
+      <!-- Contrato -->
+      <div class="sp-title">Datos del contrato</div>
+      <div class="fg2" style="margin-bottom:8px">
+        <div class="field"><label>N° de contrato</label><input type="text" id="f-contrato" oninput="actualizar()"/></div>
+        <div class="field"><label>Contratista</label><input type="text" id="f-contratista" oninput="actualizar()"/></div>
+        <div class="field"><label>Residente de obra</label><input type="text" id="f-residente" oninput="actualizar()"/></div>
+        <div class="field"><label>Inspector</label><input type="text" id="f-inspector" oninput="actualizar()"/></div>
+        <div class="field"><label>Fecha inicio</label><input type="text" id="f-fi" oninput="actualizar()"/></div>
+        <div class="field"><label>Fecha fin contractual</label><input type="text" id="f-ff" oninput="actualizar()"/></div>
+      </div>
+
+      <!-- Situación -->
+      <div class="sp-title">Situación actual</div>
+      <div class="field" style="margin-bottom:10px">
+        <label>Descripción de trabajos en ejecución</label>
+        <textarea id="f-situacion" oninput="actualizar()"></textarea>
+        <div class="hint">Describe los frentes de trabajo activos, estado de materiales, personal en obra...</div>
+      </div>
+
+      <!-- Prog mensual -->
+      <div class="sp-title">Agregar mes al cronograma</div>
+      <div class="fg4" style="margin-bottom:8px">
+        <div class="field"><label>Período</label><input type="text" id="m-mes" placeholder="MAR-26"/></div>
+        <div class="field"><label>Prog. base %</label><input type="number" id="m-pb" min="0" max="100" step="0.1" placeholder="0.0"/></div>
+        <div class="field"><label>Prog. act. %</label><input type="number" id="m-pa" min="0" max="100" step="0.1" placeholder="0.0"/></div>
+        <div class="field"><label>Av. fís. %</label><input type="number" id="m-af" min="0" max="100" step="0.1" placeholder="0.0"/></div>
+        <div class="field" style="grid-column:span 2"><label>Certif. %</label><input type="number" id="m-ac" min="0" max="100" step="0.1" placeholder="0.0"/></div>
+        <div class="field" style="grid-column:span 2;display:flex;align-items:flex-end"><button class="btn-save" style="width:100%;margin:0" onclick="addMes()">+ Agregar mes</button></div>
+      </div>
+    </div>
+    <!-- Save row sticky -->
+    <div class="save-row">
+      <button class="btn-save" onclick="guardar()">💾 Guardar cambios</button>
+      <button class="btn-sec" onclick="limpiar()">Resetear</button>
+      <span class="saved-badge" id="saved-ok">✓ Guardado</span>
+    </div>
+  </div>
+
+</div><!-- /layout ej -->
+</div><!-- /view-ej -->
+
+<script>
+// ══════════════════════════════════════════
+// ESTADO
+// ══════════════════════════════════════════
+let rol = 'residente';
+
+const mesesBase = [];
+let meses = JSON.parse(JSON.stringify(mesesBase));
+
+const fmtPct = v => v != null ? Number(v).toFixed(1)+'%' : '—';
+const fmtM = v => { const n=Number(v); if(!v||isNaN(n)) return '—'; return n>=1e6?'S/ '+(n/1e6).toFixed(2)+'M':'S/ '+n.toLocaleString('es-PE',{minimumFractionDigits:0}); };
+
+// ══════════════════════════════════════════
+// PHASE SWITCH
+// ══════════════════════════════════════════
+function setPhase(p, el) {
+  document.querySelectorAll('.phase-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('view-et').style.display = p==='et' ? 'grid' : 'none';
+  document.getElementById('view-et').classList.toggle('hidden', p!=='et');
+  const vejEl = document.getElementById('view-ej');
+  if(p==='ej') { vejEl.style.display='block'; vejEl.classList.remove('hidden'); }
+  else { vejEl.style.display='none'; vejEl.classList.add('hidden'); }
+}
+
+// ══════════════════════════════════════════
+// ROL
+// ══════════════════════════════════════════
+function cambiarRol(r) {
+  rol = r;
+  const labels = { residente:'✏️ Residente — edita los campos y ve el resultado en vivo', especialista:'🔧 Especialista — edita los campos y ve el resultado en vivo', supervisor:'✅ Supervisor — vista de validación (solo lectura)', observador:'👁 Observador — solo lectura' };
+  const clases = { residente:'rol-banner rb-editor', especialista:'rol-banner rb-editor', supervisor:'rol-banner rb-sup', observador:'rol-banner rb-obs' };
+  const puedeEditar = rol==='residente'||rol==='especialista';
+
+  document.getElementById('ej-rol-banner').textContent = labels[rol];
+  document.getElementById('ej-rol-banner').className = clases[rol];
+  document.getElementById('et-rol-banner').textContent = labels[rol].replace('edita los campos y ve el resultado en vivo','vista del ET completado');
+  document.getElementById('et-rol-banner').className = clases[rol];
+
+  // Enable/disable form fields
+  document.querySelectorAll('#ej-side input, #ej-side textarea').forEach(el => el.disabled = !puedeEditar);
+  document.querySelectorAll('#ej-side .btn-save, #ej-side .btn-sec').forEach(el => el.disabled = !puedeEditar);
+  const addMesBtn = document.querySelector('#ej-side button[onclick="addMes()"]');
+  if(addMesBtn) addMesBtn.disabled = !puedeEditar;
+}
+
+// ══════════════════════════════════════════
+// ACTUALIZAR EN TIEMPO REAL
+// ══════════════════════════════════════════
+function actualizar() {
+  const fis  = parseFloat(document.getElementById('f-fis').value)||0;
+  const mfis = document.getElementById('f-mfis').value;
+  const cert = parseFloat(document.getElementById('f-cert').value)||0;
+  const mcert= document.getElementById('f-mcert').value;
+  const prog = parseFloat(document.getElementById('f-prog').value)||0;
+  const mprog= document.getElementById('f-mprog').value;
+
+  // Update stats
+  document.getElementById('d-fis-pct').textContent = fis.toFixed(1)+'%';
+  document.getElementById('d-cert-pct').textContent = cert.toFixed(1)+'%';
+  document.getElementById('d-prog-pct').textContent = prog.toFixed(1)+'%';
+  document.getElementById('d-fis-bar').style.width = Math.min(fis,100)+'%';
+  document.getElementById('d-cert-bar').style.width = Math.min(cert,100)+'%';
+  document.getElementById('d-prog-bar').style.width = Math.min(prog,100)+'%';
+  document.getElementById('d-fis-m').textContent = fmtM(mfis);
+  document.getElementById('d-cert-m').textContent = fmtM(mcert);
+  document.getElementById('d-prog-m').textContent = fmtM(mprog);
+
+  // Brecha
+  const brecha = Math.abs(fis - cert);
+  document.getElementById('d-brecha').textContent = brecha.toFixed(1)+' pp';
+  const bb = document.getElementById('brecha-box');
+  const bi = document.getElementById('brecha-icon');
+  const bd = document.getElementById('brecha-desc');
+  if(brecha > 20) { bb.className='brecha-box bb-crit'; bi.textContent='✗'; bd.textContent='Brecha crítica — el avance financiero supera al físico en más de 20 puntos'; }
+  else if(brecha > 5) { bb.className='brecha-box bb-warn'; bi.textContent='⚠'; bd.textContent='Requiere atención — diferencia entre avance físico y certificación'; }
+  else { bb.className='brecha-box bb-ok'; bi.textContent='✓'; bd.textContent='Brecha normal — avance físico y certificación alineados'; }
+
+  // EJ tab label
+  document.getElementById('ej-pct-tab').textContent = fis.toFixed(1)+'% físico';
+
+  // Contrato fields
+  document.getElementById('d-contrato').textContent = document.getElementById('f-contrato').value || '—';
+  document.getElementById('d-contratista').textContent = document.getElementById('f-contratista').value || '—';
+  document.getElementById('d-residente').textContent = document.getElementById('f-residente').value || '—';
+  document.getElementById('d-inspector').textContent = document.getElementById('f-inspector').value || '—';
+  document.getElementById('d-fi').textContent = document.getElementById('f-fi').value || '—';
+  document.getElementById('d-ff').textContent = document.getElementById('f-ff').value || '—';
+
+  // Situación
+  const sit = document.getElementById('f-situacion').value;
+  document.getElementById('d-situacion').textContent = sit || '(Sin descripción registrada)';
+}
+
+// ══════════════════════════════════════════
+// TABLA MENSUAL
+// ══════════════════════════════════════════
+function renderMeses() {
+  const tbody = document.getElementById('prog-tbody');
+  tbody.innerHTML = meses.map(m => `
+    <tr class="${m.activo?'hl':''}">
+      <td><strong>${m.mes}</strong>${m.activo?' <span style="font-size:9px;background:var(--green-lt);color:var(--green);padding:1px 5px;border-radius:3px;font-weight:600">actual</span>':''}</td>
+      <td>${m.pb!=null?m.pb.toFixed(1)+'%':'—'}</td>
+      <td>${m.pa!=null?m.pa.toFixed(1)+'%':'—'}</td>
+      <td style="color:var(--green);font-weight:${m.activo?'700':'400'}">${m.af!=null?m.af.toFixed(1)+'%':'—'}</td>
+      <td>${m.ac!=null?m.ac.toFixed(1)+'%':'—'}</td>
+      <td class="${calcBrecha(m)}">${brechaLabel(m)}</td>
+    </tr>`).join('');
+}
+
+function calcBrecha(m) {
+  if(m.af==null||m.ac==null) return '';
+  const b = m.af - m.ac;
+  return b >= 0 ? 'br-pos' : 'br-neg';
+}
+function brechaLabel(m) {
+  if(m.af==null||m.ac==null) return '—';
+  const b = m.af - m.ac;
+  return (b>=0?'+':'')+b.toFixed(1)+' pp';
+}
+
+function addMes() {
+  const mes = document.getElementById('m-mes').value.trim();
+  if(!mes) return;
+  const pb = parseFloat(document.getElementById('m-pb').value)||null;
+  const pa = parseFloat(document.getElementById('m-pa').value)||null;
+  const af = parseFloat(document.getElementById('m-af').value)||null;
+  const ac = parseFloat(document.getElementById('m-ac').value)||null;
+  // Mark all as not activo, then new one as activo
+  meses.forEach(m => m.activo=false);
+  meses.push({mes, pb, pa, af, ac, activo:true});
+  renderMeses();
+  ['m-mes','m-pb','m-pa','m-af','m-ac'].forEach(id=>document.getElementById(id).value='');
+  toast('Mes agregado al cronograma');
+}
+
+// ══════════════════════════════════════════
+// AGREGAR NUEVOS DATOS
+// ══════════════════════════════════════════
+function mostrarFormAvancesMensuales() {
+  const periodo = prompt('Período (ej: MAR-26):');
+  if (!periodo) return;
+
+  const progBase = parseFloat(prompt('Prog. base acum. (%):') || 0);
+  const progActual = parseFloat(prompt('Prog. actual acum. (%):') || 0);
+  const avanceFis = parseFloat(prompt('Av. físico acum. (%):') || 0);
+  const devengado = parseFloat(prompt('Devengado acum. (%):') || 0);
+
+  meses.forEach(m => m.activo = false);
+  meses.push({ mes: periodo, pb: progBase, pa: progActual, af: avanceFis, ac: devengado, activo: true });
+  renderMeses();
+  document.getElementById('prog-tabla-container').style.display = 'block';
+  document.getElementById('prog-empty-msg').style.display = 'none';
+  toast('✓ Mes agregado al cronograma');
+}
+
+function mostrarFormRiesgos() {
+  const nivel = prompt('Nivel (ALTO/MEDIO/BAJO):')?.toUpperCase();
+  if (!nivel || !['ALTO', 'MEDIO', 'BAJO'].includes(nivel)) {
+    toast('❌ Nivel inválido');
+    return;
+  }
+
+  const tipo = prompt('Tipo de riesgo:');
+  const descripcion = prompt('Descripción:');
+  const causa = prompt('Causa:');
+  const acuerdo = prompt('Acuerdo/Acción:');
+
+  agregarRiesgo(nivel, tipo, descripcion, causa, acuerdo);
+}
+
+function mostrarFormTrabajos() {
+  const partida = prompt('Partida (ej: 01.02.03):');
+  const descripcion = prompt('Descripción:');
+  const monto = parseFloat(prompt('Monto (S/):') || 0);
+
+  if (!partida || !descripcion) {
+    toast('❌ Datos incompletos');
+    return;
+  }
+
+  agregarTrabajo(partida, descripcion, monto);
+}
+
+async function agregarRiesgo(nivel, tipo, descripcion, causa, acuerdo) {
+  try {
+    const { error } = await supabase
+      .from('riesgos')
+      .insert([{
+        obra_id: obraData.id,
+        nivel,
+        tipo,
+        descripcion,
+        causa,
+        acuerdo,
+        resuelto: false
+      }]);
+
+    if (error) throw error;
+
+    toast('✓ Riesgo agregado');
+    cargarDatosObra();
+  } catch (err) {
+    toast('❌ Error: ' + err.message);
+  }
+}
+
+async function agregarTrabajo(partida, descripcion, monto) {
+  try {
+    const { error } = await supabase
+      .from('trabajos_pendientes')
+      .insert([{
+        obra_id: obraData.id,
+        partida,
+        descripcion,
+        monto,
+        completado: false
+      }]);
+
+    if (error) throw error;
+
+    toast('✓ Trabajo agregado');
+    cargarDatosObra();
+  } catch (err) {
+    toast('❌ Error: ' + err.message);
+  }
+}
+
+function limpiar() {
+  if(!confirm('¿Limpiar todos los campos?')) return;
+  // Limpiar campos de entrada
+  document.getElementById('f-fis').value = '';
+  document.getElementById('f-mfis').value = '';
+  document.getElementById('f-cert').value = '';
+  document.getElementById('f-mcert').value = '';
+  document.getElementById('f-prog').value = '';
+  document.getElementById('f-mprog').value = '';
+  document.getElementById('f-contrato').value = '';
+  document.getElementById('f-contratista').value = '';
+  document.getElementById('f-residente').value = '';
+  document.getElementById('f-inspector').value = '';
+  document.getElementById('f-fi').value = '';
+  document.getElementById('f-ff').value = '';
+  document.getElementById('f-situacion').value = '';
+  meses = JSON.parse(JSON.stringify(mesesBase));
+  renderMeses();
+  actualizar();
+  toast('✓ Campos limpios');
+}
+
+// ══════════════════════════════════════════
+// DESCARGA
+// ══════════════════════════════════════════
+function descargarFicha() {
+  const fis  = parseFloat(document.getElementById('f-fis').value)||0;
+  const cert = parseFloat(document.getElementById('f-cert').value)||0;
+  const prog = parseFloat(document.getElementById('f-prog').value)||0;
+  const brecha = Math.abs(fis-cert).toFixed(1);
+  const sit  = document.getElementById('f-situacion').value;
+  const contr= document.getElementById('f-contratista').value;
+  const ncon = document.getElementById('f-contrato').value;
+  const res  = document.getElementById('f-residente').value;
+  const insp = document.getElementById('f-inspector').value;
+  const fi   = document.getElementById('f-fi').value;
+  const ff   = document.getElementById('f-ff').value;
+
+  const mesRows = meses.map(m=>`<tr style="${m.activo?'background:#E8F7F3;font-weight:600':''}">
+    <td><b>${m.mes}</b>${m.activo?' ★':''}</td>
+    <td style="text-align:center">${m.pb!=null?m.pb.toFixed(1)+'%':'—'}</td>
+    <td style="text-align:center">${m.pa!=null?m.pa.toFixed(1)+'%':'—'}</td>
+    <td style="text-align:center;color:#0D7A5F">${m.af!=null?m.af.toFixed(1)+'%':'—'}</td>
+    <td style="text-align:center">${m.ac!=null?m.ac.toFixed(1)+'%':'—'}</td>
+    <td style="text-align:center;color:${m.af!=null&&m.ac!=null&&(m.af-m.ac)<0?'#B91C1C':'#0D7A5F'};font-weight:700">${m.af!=null&&m.ac!=null?((m.af-m.ac)>=0?'+':'')+(m.af-m.ac).toFixed(1)+' pp':'—'}</td>
+  </tr>`).join('');
+
+  const html = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">
+<title>Ficha de Control · CUI 2591893</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;font-size:12px;color:#1A1A1A;padding:20px;background:#F2EFE8}
+.page{background:#fff;max-width:920px;margin:0 auto;border-radius:12px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.1)}
+.hdr{background:#0B1F3A;padding:22px 28px;display:flex;align-items:flex-start;justify-content:space-between}
+.logo{background:linear-gradient(135deg,#C9952A,#E8B84B);border-radius:6px;padding:3px 10px;font-size:11px;font-weight:700;color:#0B1F3A;display:inline-block;margin-bottom:8px}
+.hdr-t{font-size:18px;font-weight:700;color:#fff;letter-spacing:-.3px;margin-bottom:4px}
+.hdr-s{font-size:11px;color:rgba(255,255,255,.55)}
+.badges{display:flex;flex-direction:column;gap:5px}
+.badge{border-radius:7px;padding:5px 12px;font-size:11px;font-weight:700;white-space:nowrap;text-align:center}
+.bg-g{background:rgba(13,122,95,.2);border:1px solid rgba(13,122,95,.4);color:#5CCFB0}
+.bg-a{background:rgba(201,149,42,.2);border:1px solid rgba(201,149,42,.4);color:#E8B84B}
+.bg-r{background:rgba(185,28,28,.2);border:1px solid rgba(185,28,28,.4);color:#FCA5A5}
+body>.page>.body{padding:22px 28px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px}
+.sc{border:1.5px solid #E3DED4;border-radius:8px;padding:10px 13px;background:#FAFAF7}
+.sc-l{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#9C9690;margin-bottom:3px}
+.sc-v{font-size:20px;font-weight:700;letter-spacing:-.5px}
+.sc-s{font-size:10px;color:#9C9690;margin-top:2px}
+.stitle{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:#6B6560;margin:18px 0 8px;padding-bottom:5px;border-bottom:1.5px solid #E3DED4}
+table{width:100%;border-collapse:collapse;font-size:11px}
+thead th{background:#0B1F3A;color:rgba(255,255,255,.8);font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;padding:7px 10px;text-align:left}
+tbody td{padding:7px 10px;border-bottom:1px solid #E3DED4}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:nth-child(even) td{background:#FAFAF7}
+.sitbox{background:#E8F7F3;border:1.5px solid rgba(13,122,95,.2);border-radius:8px;padding:13px;margin-bottom:16px}
+.sitlbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#0D7A5F;margin-bottom:5px}
+.sittext{font-size:12px;line-height:1.65}
+.ig4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-bottom:14px}
+.ic{background:#F2EFE8;border-radius:6px;padding:9px 11px}
+.ic-l{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#9C9690;margin-bottom:2px}
+.ic-v{font-size:12px;font-weight:600}
+.et-hdr{background:#0B1F3A;color:rgba(255,255,255,.9);font-size:11px;font-weight:500;padding:7px 12px;border-radius:8px 8px 0 0;letter-spacing:.2px}
+.footer{background:#F2EFE8;padding:11px 28px;font-size:10px;color:#9C9690;border-top:1px solid #E3DED4;display:flex;justify-content:space-between}
+@media print{body{background:#fff;padding:0}.page{border-radius:0;box-shadow:none}}
+</style></head>
+<body><div class="page">
+<div class="hdr">
+  <div>
+    <div class="logo">ExpedienteCheck</div>
+    <div class="hdr-t">Ficha de Control — IOARR Parque Perú · 2da Etapa</div>
+    <div class="hdr-s">CUI 2591893 · MPT · Municipalidad Provincial de Tacna · ${new Date().toLocaleDateString('es-PE',{day:'2-digit',month:'long',year:'numeric'})}</div>
+  </div>
+  <div class="badges">
+    <div class="badge bg-g">ET: 100% completado</div>
+    <div class="badge bg-a">Fís. ${fis.toFixed(1)}% · Cert. ${cert.toFixed(1)}%</div>
+    <div class="badge bg-r">Brecha: ${brecha} pp</div>
+  </div>
+</div>
+<div style="padding:22px 28px">
+
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+    <div style="width:22px;height:22px;border-radius:50%;background:#FEF9EC;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#C9952A;flex-shrink:0">I</div>
+    <div style="font-size:14px;font-weight:700;color:#0B1F3A">Expediente Técnico — Completado 06/03/2026</div>
+    <span style="font-size:10px;font-weight:600;padding:2px 9px;border-radius:10px;background:#E8F7F3;color:#0D7A5F">✓ Aprobado OGSI/MPT</span>
+  </div>
+
+  <div class="ig4">
+    <div class="ic"><div class="ic-l">Abreviación</div><div class="ic-v">IOARR Parque Perú 2da Etapa</div></div>
+    <div class="ic"><div class="ic-l">Ing. Esp. responsable</div><div class="ic-v">Juan A. Neira Villanueva</div></div>
+    <div class="ic"><div class="ic-l">Inicio ET</div><div class="ic-v" style="font-family:monospace">01/01/2026</div></div>
+    <div class="ic"><div class="ic-l">Fin ET</div><div class="ic-v" style="font-family:monospace">06/03/2026</div></div>
+  </div>
+
+  <table style="margin-bottom:18px">
+    <thead><tr><th>División</th><th>Responsable</th><th>D.H.</th><th>Avance</th><th>Estado</th></tr></thead>
+    <tbody>
+      <tr><td><b>Div. San. F.L. y G.</b></td><td>Equipo multidisciplinario</td><td style="text-align:center">0</td><td style="text-align:center;font-weight:700;color:#C9952A">100%</td><td><span style="background:#E8F7F3;color:#0D7A5F;padding:2px 8px;border-radius:8px;font-size:10px;font-weight:700">✓ Culminado</span></td></tr>
+      <tr><td><b>División de Arquitectura</b></td><td>Iban E. Mamani Paye</td><td style="text-align:center">47</td><td style="text-align:center;font-weight:700;color:#C9952A">100%</td><td><span style="background:#E8F7F3;color:#0D7A5F;padding:2px 8px;border-radius:8px;font-size:10px;font-weight:700">✓ Culminado</span></td></tr>
+      <tr><td><b>División de Ingeniería</b></td><td>Juan A. Neira Villanueva</td><td style="text-align:center">10</td><td style="text-align:center;font-weight:700;color:#C9952A">100%</td><td><span style="background:#E8F7F3;color:#0D7A5F;padding:2px 8px;border-radius:8px;font-size:10px;font-weight:700">✓ Culminado</span></td></tr>
+      <tr><td><b>División de Costos y Presupuestos</b></td><td>Fiorella X. Villanueva</td><td style="text-align:center">49</td><td style="text-align:center;font-weight:700;color:#C9952A">100%</td><td><span style="background:#E8F7F3;color:#0D7A5F;padding:2px 8px;border-radius:8px;font-size:10px;font-weight:700">✓ Culminado</span></td></tr>
+    </tbody>
+  </table>
+
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+    <div style="width:22px;height:22px;border-radius:50%;background:#E8F7F3;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#0D7A5F;flex-shrink:0">II</div>
+    <div style="font-size:14px;font-weight:700;color:#0B1F3A">Ejecución de Obra</div>
+    <span style="font-size:10px;font-weight:600;padding:2px 9px;border-radius:10px;background:#FEF3C7;color:#B45309">⚡ En ejecución</span>
+  </div>
+
+  <div class="ig4">
+    <div class="ic"><div class="ic-l">N° contrato</div><div class="ic-v">${ncon}</div></div>
+    <div class="ic"><div class="ic-l">Contratista</div><div class="ic-v">${contr}</div></div>
+    <div class="ic"><div class="ic-l">Residente</div><div class="ic-v">${res}</div></div>
+    <div class="ic"><div class="ic-l">Inspector</div><div class="ic-v">${insp}</div></div>
+    <div class="ic"><div class="ic-l">Inicio contractual</div><div class="ic-v" style="font-family:monospace">${fi}</div></div>
+    <div class="ic"><div class="ic-l">Fin contractual</div><div class="ic-v" style="font-family:monospace">${ff}</div></div>
+    <div class="ic"><div class="ic-l">Avance físico</div><div class="ic-v" style="color:#0D7A5F;font-size:16px">${fis.toFixed(1)}%</div></div>
+    <div class="ic"><div class="ic-l">Certificado</div><div class="ic-v" style="color:#0B1F3A;font-size:16px">${cert.toFixed(1)}%</div></div>
+  </div>
+
+  <div class="sitbox">
+    <div class="sitlbl">Situación actual de la obra</div>
+    <div class="sittext">${sit}</div>
+  </div>
+
+  <div class="stitle">Programación y avances mensuales</div>
+  <table style="margin-bottom:18px">
+    <thead><tr><th>Período</th><th style="text-align:center">Prog. base acum.</th><th style="text-align:center">Prog. actual. acum.</th><th style="text-align:center">Av. físico acum.</th><th style="text-align:center">Certif. acum.</th><th style="text-align:center">Brecha fís.–cert.</th></tr></thead>
+    <tbody>${mesRows}</tbody>
+  </table>
+
+  <div class="stitle">Riesgos identificados</div>
+  <table style="margin-bottom:18px">
+    <thead><tr><th style="width:60px">Nivel</th><th>Descripción</th><th>Causa</th><th>Acuerdo / acción</th></tr></thead>
+    <tbody>
+      <tr><td><span style="background:#FEE2E2;color:#B91C1C;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:700">ALTO</span></td><td>Mala gestión por parte del contratista</td><td>Falta de liquidez</td><td>Reunión obligatoria viernes · Atención a valorizaciones</td></tr>
+      <tr><td><span style="background:#FEE2E2;color:#B91C1C;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:700">ALTO</span></td><td>Incumplimiento de plazos contractuales</td><td>Baja ejecución</td><td>Atención a Adicional N° 02 con Deductivo Vinculante N° 02</td></tr>
+    </tbody>
+  </table>
+
+  <div class="stitle">Trabajos pendientes</div>
+  <table>
+    <thead><tr><th>Partida</th><th>Descripción</th><th style="text-align:right">Monto (S/)</th></tr></thead>
+    <tbody>
+      <tr><td style="font-family:monospace;font-size:10px">01.02.03.01.01</td><td>Apoyo y anclaje de columna metálica · 18 und</td><td style="text-align:right;font-family:monospace">S/ 13,596</td></tr>
+      <tr><td style="font-family:monospace;font-size:10px">01.02.04</td><td>Servicios higiénicos y/o vestidores</td><td style="text-align:right;font-family:monospace">S/ 90,091</td></tr>
+      <tr><td style="font-family:monospace;font-size:10px">01.02.06</td><td>Cancha de baloncesto</td><td style="text-align:right;font-family:monospace">S/ 33,661</td></tr>
+      <tr><td style="font-family:monospace;font-size:10px">01.02.12</td><td>Estructura de protección: Cerco perimétrico</td><td style="text-align:right;font-family:monospace">S/ 163,138</td></tr>
+      <tr style="background:#FEF9EC"><td colspan="2" style="font-weight:700;color:#0B1F3A">TOTAL PENDIENTE</td><td style="text-align:right;font-family:monospace;font-weight:700;color:#0B1F3A">S/ 300,486</td></tr>
+    </tbody>
+  </table>
+</div>
+<div class="footer">
+  <span>ExpedienteCheck · CUI 2591893 · MPT Tacna · ${new Date().toLocaleDateString('es-PE',{day:'2-digit',month:'long',year:'numeric'})}</span>
+  <span>Sujeto a validación del supervisor responsable.</span>
+</div>
+</div></body></html>`;
+
+  const blob = new Blob([html], {type:'text/html'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href=url; a.download=`FichaControl_CUI2591893_${new Date().toISOString().slice(0,10)}.html`;
+  a.click(); URL.revokeObjectURL(url);
+  toast('✓ Ficha descargada — ábrela en el navegador y usa Ctrl+P para imprimir/PDF');
+}
+
+// ══════════════════════════════════════════
+// TOAST
+// ══════════════════════════════════════════
+function toast(msg) {
+  let t = document.getElementById('ec-t');
+  if(!t){t=document.createElement('div');t.id='ec-t';t.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#0B1F3A;color:#fff;padding:10px 20px;border-radius:10px;font-size:12px;font-weight:500;z-index:999;opacity:0;transition:opacity .3s;font-family:var(--sans);white-space:nowrap';document.body.appendChild(t);}
+  t.textContent=msg;t.style.opacity='1';
+  clearTimeout(t._t);t._t=setTimeout(()=>t.style.opacity='0',3000);
+}
+
+// ══════════════════════════════════════════
+// CARGAR DATOS POR CUI
+// ══════════════════════════════════════════
+async function cargarDatosObra() {
+  const urlParams = new URLSearchParams(window.location.search);
+  cuiActual = urlParams.get('cui');
+
+  if (!cuiActual || !/^\d{7}$/.test(cuiActual)) {
+    toast('❌ CUI inválido');
+    window.location.href = 'index.html';
+    return;
+  }
+
+  document.querySelector('.tb-cui').textContent = `CUI ${cuiActual}`;
+
+  try {
+    // Usar el cliente Supabase global
+    const client = window.supabase.createClient(
+      'https://xrbyvwliffdvfdmshaix.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhyYnl2d2xpZmZkdmZkbXNoYWl4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4NTMwMzAsImV4cCI6MjA5MTQyOTAzMH0.IaoSfrjeD2C_cZbQI7BWRjKZo8iyPLrD5q6qfqHewd8'
+    );
+
+    const { data: ssi } = await client
+      .from('ssi_inversiones')
+      .select('*')
+      .eq('codigo_unico', cuiActual)
+      .maybeSingle();
+
+    if (!ssi) {
+      toast('⚠️ CUI no encontrado');
+      obraData = { cui: cuiActual };
+      rellenarFormulario();
+      return;
+    }
+
+    obraData = {
+      cui: cuiActual,
+      nombre: ssi.nombre_inversion || 'Sin nombre',
+      costo_proyecto: Number(ssi.costo_actualizado) || 0,
+      pim_2026: Number(ssi.pim_ano_vigente) || 0,
+      dev_acumulado: Number(ssi.dev_acumulado) || 0,
+      devengado_2026: Number(ssi.devengado_2026) || 0
+    };
+
+    console.log('✓ Datos:', obraData);
+    rellenarFormulario();
+  } catch (err) {
+    console.error('Error:', err);
+    toast('❌ Error al cargar');
+    obraData = { cui: cuiActual };
+    rellenarFormulario();
+  }
+}
+
+function rellenarFormulario() {
+  if (!obraData) return;
+
+  const obra = obraData;
+  const ejec = obra.ejecucion || {};
+  const ssi = obra.ssi || {};
+
+  // ── TÍTULO ──
+  const nombre = obra.nombre || ssi.nombre_inversion || 'Sin nombre';
+  document.querySelector('.tb-title').textContent = 'Ficha · ' + nombre;
+
+  // ── VALORES DE INVERSIÓN ──
+  const invAprobada = obra.pim_2026 || 0;
+  const costoObra = obra.costo_proyecto || 0;
+  const devAcumulado = obra.dev_acumulado || 0;
+  const saldoPendiente = costoObra - devAcumulado;
+
+  console.log('DEBUG rellenarFormulario:', { pim_2026: obra.pim_2026, costo_proyecto: obra.costo_proyecto, dev_acumulado: obra.dev_acumulado, invAprobada, costoObra, devAcumulado, saldoPendiente });
+
+  // Mostrar en display
+  document.getElementById('d-inv-aprobada').textContent = 'S/ ' + invAprobada.toLocaleString('es-PE', {minimumFractionDigits:2});
+  document.getElementById('d-costo-obra').textContent = 'S/ ' + costoObra.toLocaleString('es-PE', {minimumFractionDigits:2});
+  document.getElementById('d-saldo-pendiente').textContent = 'S/ ' + saldoPendiente.toLocaleString('es-PE', {minimumFractionDigits:2});
+
+  // ── EJ — EJECUCIÓN ──
+  document.getElementById('f-contrato').value = ejec.contrato_numero || '';
+  document.getElementById('f-contratista').value = ejec.contratista || '';
+  document.getElementById('f-residente').value = ejec.residente_nombre || '';
+  document.getElementById('f-inspector').value = ejec.inspector_nombre || '';
+  document.getElementById('f-fi').value = ejec.fecha_inicio || '';
+  document.getElementById('f-ff').value = ejec.fecha_fin_contractual || '';
+  document.getElementById('f-situacion').value = ejec.situacion_actual || '';
+  document.getElementById('f-fis').value = ejec.avance_fisico_pct || 0;
+  document.getElementById('f-cert').value = ejec.avance_certif_pct || 0;
+  document.getElementById('f-prog').value = ejec.avance_programado_pct || 0;
+
+  // ── RIESGOS ──
+  const riesgosContainer = document.getElementById('riesgos-list');
+  if (riesgosContainer && obra.riesgos && obra.riesgos.length > 0) {
+    riesgosContainer.innerHTML = obra.riesgos.map(r => `
+      <div class="rcard">
+        <div class="rc-hdr">
+          <span class="rc-badge ${r.nivel === 'ALTO' ? 'rc-a' : 'rc-m'}">${r.nivel}</span>
+          <span style="font-size:10px;color:var(--muted)">${r.tipo || ''}</span>
+        </div>
+        <div class="rc-desc">${r.description || ''}</div>
+        <div class="rc-meta">Causa: ${r.causa || 'Sin especificar'}</div>
+        <div class="rc-acuerdo">→ ${r.acuerdo || 'Sin acuerdo registrado'}</div>
+      </div>
+    `).join('');
+  }
+
+  // ── TRABAJOS PENDIENTES ──
+  const trabajosContainer = document.getElementById('trabajos-list');
+  if (trabajosContainer && obra.trabajos_pendientes && obra.trabajos_pendientes.length > 0) {
+    let totalPendiente = 0;
+    const rows = obra.trabajos_pendientes.map(t => {
+      totalPendiente += t.monto || 0;
+      return `
+        <div class="pend-row">
+          <span class="pid">${t.partida || '—'}</span>
+          <span style="flex:1">${t.description || ''}</span>
+          <span class="pmonto">S/ ${(t.monto || 0).toLocaleString('es-PE')}</span>
+        </div>
+      `;
+    }).join('');
+
+    trabajosContainer.innerHTML = rows + `
+      <div class="pend-row" style="border-top:2px solid var(--border);margin-top:4px;padding-top:8px;font-weight:700">
+        <span style="flex:1;color:var(--navy)">Total pendiente</span>
+        <span class="pmonto" style="color:var(--navy)">S/ ${totalPendiente.toLocaleString('es-PE')}</span>
+      </div>
+    `;
+  }
+
+  // ── AVANCES MENSUALES DINÁMICOS ──
+  if (obra.avances && obra.avances.length > 0) {
+    document.getElementById('prog-tabla-container').style.display = 'block';
+    document.getElementById('prog-empty-msg').style.display = 'none';
+
+    meses = obra.avances.map(av => ({
+      mes: av.periodo,
+      pb: av.prog_base_acum,
+      pa: av.prog_actual_acum,
+      af: av.avance_fisico_acum,
+      ac: av.devengado_acum,
+      activo: false
+    }));
+    renderMeses();
+  } else {
+    document.getElementById('prog-tabla-container').style.display = 'none';
+    document.getElementById('prog-empty-msg').style.display = 'block';
+    meses = [];
+  }
+
+  // Actualizar display
+  actualizar();
+}
+
+// ══════════════════════════════════════════
+// GUARDAR CAMBIOS
+// ══════════════════════════════════════════
+async function guardarCambios() {
+  const btnSave = document.querySelector('.btn-save');
+  btnSave.disabled = true;
+  btnSave.textContent = 'Guardando...';
+
+  try {
+    const datosEjecucion = {
+      numero_contrato: document.getElementById('f-contrato').value || null,
+      contratista: document.getElementById('f-contratista').value || null,
+      residente: document.getElementById('f-residente').value || null,
+      inspector: document.getElementById('f-inspector').value || null,
+      fecha_inicio_contractual: document.getElementById('f-fi').value || null,
+      fecha_fin_contractual: document.getElementById('f-ff').value || null,
+      situacion: document.getElementById('f-situacion').value || null,
+      avance_fisico: parseFloat(document.getElementById('f-fis').value) || 0,
+      avance_financiero: parseFloat(document.getElementById('f-cert').value) || 0,
+      avance_programado: parseFloat(document.getElementById('f-prog').value) || 0,
+      fecha_actualizacion: new Date().toISOString(),
+    };
+
+    // Guardar en tabla ejecuciones
+    if (obraData.ejecucion?.id) {
+      const { error } = await supabase
+        .from('ejecuciones')
+        .update(datosEjecucion)
+        .eq('id', obraData.ejecucion.id);
+
+      if (error) throw new Error('Error en ejecuciones: ' + error.message);
+    } else {
+      // Si no existe, crear nuevo registro
+      const { error, data: newEjec } = await supabase
+        .from('ejecuciones')
+        .insert([{ ...datosEjecucion, obra_id: obraData.id }])
+        .select()
+        .single();
+
+      if (error) throw new Error('Error al crear ejecución: ' + error.message);
+      obraData.ejecucion = newEjec;
+    }
+
+    toast('✓ Cambios guardados correctamente');
+    Object.assign(obraData.ejecucion, datosEjecucion);
+
+    const badge = document.getElementById('saved-ok');
+    badge.classList.add('show');
+    setTimeout(() => badge.classList.remove('show'), 2500);
+  } catch (err) {
+    console.error('Error al guardar:', err);
+    toast('❌ Error al guardar: ' + err.message);
+  } finally {
+    btnSave.disabled = false;
+    btnSave.textContent = '💾 Guardar cambios';
+  }
+}
+
+// Reemplazar función guardar anterior
+document.querySelector('button[onclick="guardar()"]')?.addEventListener('click', guardarCambios);
+
+// ══════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════
+window.addEventListener('load', () => {
+  cargarDatosObra();
+  renderMeses();
+  actualizar();
+});
+</script>
+</body>
+</html>

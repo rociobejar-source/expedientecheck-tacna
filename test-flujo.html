@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test Flujo de Autenticación</title>
+  <style>
+    body { font-family: monospace; padding: 20px; background: #f0ede6; }
+    .container { max-width: 600px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; }
+    h1 { color: #0f0f0f; }
+    .section { margin: 20px 0; padding: 15px; background: #faf9f6; border-left: 3px solid #2a7d4f; }
+    button { background: #2a7d4f; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; margin: 5px; }
+    button:hover { opacity: 0.8; }
+    .log { background: #f5f3ee; padding: 10px; margin: 10px 0; border-radius: 4px; font-size: 12px; max-height: 200px; overflow-y: auto; }
+    .success { color: #2a7d4f; font-weight: bold; }
+    .error { color: #c0392b; font-weight: bold; }
+    .code { background: #f0ede6; padding: 10px; margin: 10px 0; border-radius: 4px; overflow-x: auto; }
+    .paso { border: 1px solid #e0ddd6; padding: 10px; margin: 10px 0; border-radius: 4px; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>🧪 Test Flujo de Autenticación</h1>
+
+  <!-- PASO 1: Index.html sin sesión -->
+  <div class="section">
+    <h2>Paso 1: index.html (SIN sesión)</h2>
+    <p>Click en "Ver detalle" debe redirigir a login.html?cui=XXXXX</p>
+    <button onclick="testPaso1()">Simular Click en 'Ver detalle'</button>
+    <div class="log" id="log1"></div>
+  </div>
+
+  <!-- PASO 2: Login -->
+  <div class="section">
+    <h2>Paso 2: login.html → Login exitoso</h2>
+    <p>Simula login y actualiza localStorage con token</p>
+    <button onclick="testPaso2()">Simular Login Exitoso</button>
+    <div class="log" id="log2"></div>
+  </div>
+
+  <!-- PASO 3: Redirección a ficha -->
+  <div class="section">
+    <h2>Paso 3: Verificar ruta a fichatecnicaCUI.html</h2>
+    <p>Tras login con cui en URL, debe redirigir a fichatecnicaCUI.html?cui=XXXXX</p>
+    <button onclick="testPaso3()">Verificar Lógica de Redirección</button>
+    <div class="log" id="log3"></div>
+  </div>
+
+  <!-- PASO 4: Protección de ficha -->
+  <div class="section">
+    <h2>Paso 4: fichatecnicaCUI.html - Protección</h2>
+    <p>Al cargar la ficha, verifica si hay token</p>
+    <button onclick="testPaso4()">Verificar Protección de Ficha</button>
+    <div class="log" id="log4"></div>
+  </div>
+
+  <!-- RESET -->
+  <div class="section">
+    <h2>Herramientas</h2>
+    <button onclick="mostrarStorage()">Ver localStorage</button>
+    <button onclick="limpiarStorage()">Limpiar localStorage</button>
+    <button onclick="simularToken()">Agregar Token Simulado</button>
+    <div class="log" id="logStorage"></div>
+  </div>
+
+  <!-- Navegación entre páginas -->
+  <div class="section">
+    <h2>Navegación Manual</h2>
+    <p>Usa estos botones para navegar entre páginas y probar el flujo real:</p>
+    <button onclick="goToIndex()">→ Ir a index.html</button>
+    <button onclick="goToLogin()">→ Ir a login.html</button>
+    <button onclick="goToFicha()">→ Ir a fichatecnicaCUI.html?cui=2591893</button>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════
+// FUNCIONES DE TEST
+// ═══════════════════════════════════════════════════════════════════
+
+function log(elementId, mensaje, tipo = 'normal') {
+  const el = document.getElementById(elementId);
+  const timestamp = new Date().toLocaleTimeString();
+  const clase = tipo === 'success' ? 'success' : tipo === 'error' ? 'error' : '';
+  const icon = tipo === 'success' ? '✅' : tipo === 'error' ? '❌' : 'ℹ️';
+  el.innerHTML += `<div class="${clase}">[${timestamp}] ${icon} ${mensaje}</div>`;
+  el.scrollTop = el.scrollHeight;
+}
+
+// PASO 1: Verificar lógica de index.html
+function testPaso1() {
+  const log1 = document.getElementById('log1');
+  log1.innerHTML = '';
+
+  log('log1', 'Simulando: Usuario en index.html hace click en "Ver detalle"');
+  log('log1', 'CUI de la obra: 2591893');
+
+  const token = localStorage.getItem('expediente_token');
+
+  if (token) {
+    log('log1', `Token encontrado: ${token.substring(0, 20)}...`, 'success');
+    log('log1', 'Lógica: Redirigir a fichatecnicaCUI.html?cui=2591893');
+  } else {
+    log('log1', 'Token NO encontrado', 'error');
+    log('log1', 'Lógica: Redirigir a login.html?cui=2591893', 'success');
+  }
+
+  log('log1', '📍 URL destino: ' + (token ? 'fichatecnicaCUI.html?cui=2591893' : 'login.html?cui=2591893'));
+}
+
+// PASO 2: Simular login exitoso
+function testPaso2() {
+  const log2 = document.getElementById('log2');
+  log2.innerHTML = '';
+
+  log('log2', 'Simulando: usuario ingresa email y contraseña en login.html');
+  log('log2', 'Email: usuario@example.com');
+  log('log2', 'Enviando petición POST a API...');
+
+  // Simular respuesta del servidor
+  setTimeout(() => {
+    log('log2', '✓ API responde con token de autenticación');
+
+    // Simular almacenamiento de token
+    const tokenSimulado = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0...';
+    localStorage.setItem('expediente_token', tokenSimulado);
+    localStorage.setItem('expediente_user', JSON.stringify({
+      id: '123',
+      email: 'usuario@example.com',
+      name: 'Usuario Test'
+    }));
+
+    log('log2', 'Token guardado en localStorage', 'success');
+    log('log2', 'Verificando parámetro cui en URL...', 'success');
+
+    const urlParams = new URLSearchParams('?cui=2591893');
+    const cuiParam = urlParams.get('cui');
+
+    if (cuiParam) {
+      log('log2', `CUI encontrado en URL: ${cuiParam}`, 'success');
+      log('log2', '→ Redirigir a: fichatecnicaCUI.html?cui=2591893', 'success');
+    } else {
+      log('log2', 'No hay CUI en URL → redirigir a index.html', 'success');
+    }
+  }, 800);
+}
+
+// PASO 3: Verificar lógica de redirección tras login
+function testPaso3() {
+  const log3 = document.getElementById('log3');
+  log3.innerHTML = '';
+
+  log('log3', 'Verificando: Lógica de redirección después de login');
+
+  const cuiParam = '2591893';
+  const token = localStorage.getItem('expediente_token');
+
+  if (token) {
+    log('log3', `Token presente: ${token ? 'SÍ' : 'NO'}`, 'success');
+    log('log3', `CUI parámetro: ${cuiParam}`, 'success');
+    log('log3', '→ Redirección a: fichatecnicaCUI.html?cui=2591893', 'success');
+  } else {
+    log('log3', 'Token no presente - login no se completó', 'error');
+  }
+}
+
+// PASO 4: Verificar protección de fichatecnicaCUI.html
+function testPaso4() {
+  const log4 = document.getElementById('log4');
+  log4.innerHTML = '';
+
+  log('log4', 'Verificando: Protección de fichatecnicaCUI.html');
+
+  const token = localStorage.getItem('expediente_token');
+
+  if (token) {
+    log('log4', `Token encontrado: ${token.substring(0, 20)}...`, 'success');
+    log('log4', '✓ Puede acceder a la ficha técnica');
+    log('log4', 'Página cargada normalmente');
+  } else {
+    log('log4', 'Token NO encontrado', 'error');
+    log('log4', 'Protección activada: Redireccionar a login.html', 'success');
+    // Extrae cui si existe
+    const cui = new URLSearchParams(window.location.search).get('cui');
+    const redirectUrl = 'login.html' + (cui ? `?cui=${cui}` : '');
+    log('log4', `→ URL destino: ${redirectUrl}`);
+  }
+}
+
+// HERRAMIENTAS
+function mostrarStorage() {
+  const logStorage = document.getElementById('logStorage');
+  logStorage.innerHTML = '';
+
+  const token = localStorage.getItem('expediente_token');
+  const user = localStorage.getItem('expediente_user');
+
+  log('logStorage', '📦 localStorage Estado:', 'normal');
+  log('logStorage', `Token: ${token ? '✅ ' + token.substring(0, 30) + '...' : '❌ No existe'}`);
+  log('logStorage', `Usuario: ${user ? '✅ ' + user.substring(0, 50) + '...' : '❌ No existe'}`);
+}
+
+function limpiarStorage() {
+  localStorage.removeItem('expediente_token');
+  localStorage.removeItem('expediente_user');
+
+  const logStorage = document.getElementById('logStorage');
+  logStorage.innerHTML = '';
+  log('logStorage', '🗑️ localStorage limpiado', 'success');
+  mostrarStorage();
+}
+
+function simularToken() {
+  const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c';
+  const user = { id: '1', email: 'test@example.com', name: 'Test User' };
+
+  localStorage.setItem('expediente_token', token);
+  localStorage.setItem('expediente_user', JSON.stringify(user));
+
+  const logStorage = document.getElementById('logStorage');
+  logStorage.innerHTML = '';
+  log('logStorage', '✅ Token simulado agregado a localStorage', 'success');
+  mostrarStorage();
+}
+
+// NAVEGACIÓN
+function goToIndex() {
+  window.location.href = 'index.html';
+}
+
+function goToLogin() {
+  window.location.href = 'login.html?cui=2591893';
+}
+
+function goToFicha() {
+  window.location.href = 'fichatecnicaCUI.html?cui=2591893';
+}
+
+// AUTO-EJECUTAR al cargar
+window.addEventListener('load', () => {
+  mostrarStorage();
+});
+</script>
+
+</body>
+</html>

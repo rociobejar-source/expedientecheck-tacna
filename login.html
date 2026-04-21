@@ -233,9 +233,15 @@
     const errorMsg = document.getElementById('error-msg');
     const loading = document.getElementById('loading');
 
+    // Obtener parámetro cui de la URL si existe
+    const urlParams = new URLSearchParams(window.location.search);
+    const cuiParam = urlParams.get('cui');
+
     // Si ya está logueado, redirige al dashboard
     if (localStorage.getItem('expediente_token')) {
-      window.location.href = 'index.html';
+      // Si viene con cui, va a la ficha; si no, va al index
+      const redirectUrl = cuiParam ? `fichatecnicaCUI.html?cui=${cuiParam}` : 'index.html';
+      window.location.href = redirectUrl;
     }
 
     form.addEventListener('submit', async (e) => {
@@ -271,8 +277,9 @@
         localStorage.setItem('expediente_token', data.access_token);
         localStorage.setItem('expediente_user', JSON.stringify(data.user));
 
-        // Redirigir al dashboard
-        window.location.href = 'index.html';
+        // Redirigir: si viene con cui, va a la ficha; si no, va al dashboard
+        const redirectUrl = cuiParam ? `fichatecnicaCUI.html?cui=${cuiParam}` : 'index.html';
+        window.location.href = redirectUrl;
       } catch (err) {
         showError(err.message);
         btnSubmit.disabled = false;
