@@ -915,45 +915,43 @@ function cargarOpcionesFiltros() {
   const provincias = [...new Set(obras.map(o => o.provincia).filter(p => p))].sort();
   const municipalidades = [...new Set(obras.map(o => o.distrito).filter(d => d))].sort();
 
-  // ENTIDAD
   const selectEntidad = document.getElementById('filter-entidad');
   selectEntidad.innerHTML = '';
   entidades.forEach(e => {
     selectEntidad.innerHTML += `<option value="${e}">${e}</option>`;
   });
-  if (entidades.length === 1) {
-    selectEntidad.value = entidades[0];
-    filtroEntidad = entidades[0];
-  }
 
-  // DEPARTAMENTO
   const selectDepartamento = document.getElementById('filter-departamento');
   selectDepartamento.innerHTML = '';
   departamentos.forEach(d => {
     selectDepartamento.innerHTML += `<option value="${d}">${d}</option>`;
   });
-  if (departamentos.length === 1) {
-    selectDepartamento.value = departamentos[0];
-    filtroDepartamento = departamentos[0];
-  }
 
-  // PROVINCIA
   const selectProvincia = document.getElementById('filter-provincia');
   selectProvincia.innerHTML = '';
   provincias.forEach(p => {
     selectProvincia.innerHTML += `<option value="${p}">${p}</option>`;
   });
-  if (provincias.length === 1) {
-    selectProvincia.value = provincias[0];
-    filtroProvincia = provincias[0];
-  }
 
-  // MUNICIPALIDAD
   const selectMunicipalidad = document.getElementById('filter-municipalidad');
   selectMunicipalidad.innerHTML = '';
   municipalidades.forEach(m => {
     selectMunicipalidad.innerHTML += `<option value="${m}">${m}</option>`;
   });
+
+  // Pre-seleccionar si hay solo una opción (Tacna)
+  if (entidades.length === 1) {
+    selectEntidad.value = entidades[0];
+    filtroEntidad = entidades[0];
+  }
+  if (departamentos.length === 1) {
+    selectDepartamento.value = departamentos[0];
+    filtroDepartamento = departamentos[0];
+  }
+  if (provincias.length === 1) {
+    selectProvincia.value = provincias[0];
+    filtroProvincia = provincias[0];
+  }
   if (municipalidades.length === 1) {
     selectMunicipalidad.value = municipalidades[0];
     filtroMunicipalidad = municipalidades[0];
