@@ -915,43 +915,57 @@ function cargarOpcionesFiltros() {
   const provincias = [...new Set(obras.map(o => o.provincia).filter(p => p))].sort();
   const municipalidades = [...new Set(obras.map(o => o.distrito).filter(d => d))].sort();
 
+  // ENTIDAD
   const selectEntidad = document.getElementById('filter-entidad');
-  selectEntidad.innerHTML = '';
+  selectEntidad.innerHTML = '<option value="">Todas las entidades</option>';
   entidades.forEach(e => {
-    selectEntidad.innerHTML += `<option value="${e}">${e}</option>`;
+    const opt = document.createElement('option');
+    opt.value = e;
+    opt.textContent = e;
+    selectEntidad.appendChild(opt);
   });
-
-  const selectDepartamento = document.getElementById('filter-departamento');
-  selectDepartamento.innerHTML = '';
-  departamentos.forEach(d => {
-    selectDepartamento.innerHTML += `<option value="${d}">${d}</option>`;
-  });
-
-  const selectProvincia = document.getElementById('filter-provincia');
-  selectProvincia.innerHTML = '';
-  provincias.forEach(p => {
-    selectProvincia.innerHTML += `<option value="${p}">${p}</option>`;
-  });
-
-  const selectMunicipalidad = document.getElementById('filter-municipalidad');
-  selectMunicipalidad.innerHTML = '';
-  municipalidades.forEach(m => {
-    selectMunicipalidad.innerHTML += `<option value="${m}">${m}</option>`;
-  });
-
-  // Pre-seleccionar si hay solo una opción (Tacna)
   if (entidades.length === 1) {
     selectEntidad.value = entidades[0];
     filtroEntidad = entidades[0];
   }
+
+  // DEPARTAMENTO
+  const selectDepartamento = document.getElementById('filter-departamento');
+  selectDepartamento.innerHTML = '<option value="">Todos los departamentos</option>';
+  departamentos.forEach(d => {
+    const opt = document.createElement('option');
+    opt.value = d;
+    opt.textContent = d;
+    selectDepartamento.appendChild(opt);
+  });
   if (departamentos.length === 1) {
     selectDepartamento.value = departamentos[0];
     filtroDepartamento = departamentos[0];
   }
+
+  // PROVINCIA
+  const selectProvincia = document.getElementById('filter-provincia');
+  selectProvincia.innerHTML = '<option value="">Todas las provincias</option>';
+  provincias.forEach(p => {
+    const opt = document.createElement('option');
+    opt.value = p;
+    opt.textContent = p;
+    selectProvincia.appendChild(opt);
+  });
   if (provincias.length === 1) {
     selectProvincia.value = provincias[0];
     filtroProvincia = provincias[0];
   }
+
+  // MUNICIPALIDAD
+  const selectMunicipalidad = document.getElementById('filter-municipalidad');
+  selectMunicipalidad.innerHTML = '<option value="">Todas las municipalidades</option>';
+  municipalidades.forEach(m => {
+    const opt = document.createElement('option');
+    opt.value = m;
+    opt.textContent = m;
+    selectMunicipalidad.appendChild(opt);
+  });
   if (municipalidades.length === 1) {
     selectMunicipalidad.value = municipalidades[0];
     filtroMunicipalidad = municipalidades[0];
