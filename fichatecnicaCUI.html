@@ -252,6 +252,32 @@ body{background:var(--bg);font-family:var(--sans);font-size:13px;color:var(--tex
       <div class="ic"><div class="ic-lbl">Fecha fin ET</div><div class="ic-val mono" id="et-fin">—</div></div>
     </div>
 
+    <div class="ig3" id="et-info-grid2" style="display:none">
+      <div class="ic"><div class="ic-lbl">Costo ET</div><div class="ic-val mono" id="et-monto">—</div></div>
+      <div class="ic"><div class="ic-lbl">Días hábiles</div><div class="ic-val" id="et-dias">—</div></div>
+      <div class="ic"><div class="ic-lbl">Versión</div><div class="ic-val" id="et-version">—</div></div>
+    </div>
+
+    <div class="sitbox sb-et" id="et-obs-box" style="display:none">
+      <div class="sb-lbl">Observaciones</div>
+      <div class="sb-text" id="et-obs">—</div>
+    </div>
+
+    <div id="et-divisiones-wrap" style="display:none;margin-bottom:14px">
+      <div style="margin-bottom:8px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted)">Divisiones del Expediente Técnico</div>
+      <div class="tbl-wrap">
+        <table class="tbl">
+          <thead><tr><th>División</th><th>Responsable</th><th>D.H.</th><th>Avance</th><th>Estado</th></tr></thead>
+          <tbody id="et-divisiones-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div id="et-riesgos-wrap" style="display:none">
+      <div style="margin-bottom:8px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted)">Riesgos identificados</div>
+      <div id="et-riesgos-list"></div>
+    </div>
+
     <div style="padding:20px;text-align:center;color:var(--muted);background:var(--surface2);border-radius:8px;margin-bottom:14px" id="et-empty-state">
       <p style="font-size:13px;margin-bottom:8px">📋 No hay información de Expediente Técnico registrada para este proyecto</p>
       <p style="font-size:11px;color:var(--muted2)">Los datos de ET se cargarán cuando estén disponibles en el sistema</p>
@@ -891,6 +917,7 @@ async function cargarDatosObra() {
       toast('⚠️ CUI no encontrado');
       obraData = { cui: cuiActual, id: obraId };
       rellenarFormulario();
+      await cargarDatosET(cuiActual, token);
       return;
     }
 
@@ -906,6 +933,7 @@ async function cargarDatosObra() {
 
     console.log('✓ Datos:', obraData);
     rellenarFormulario();
+    await cargarDatosET(cuiActual, token);
   } catch (err) {
     console.error('Error:', err);
     toast('❌ Error al cargar');
@@ -1076,6 +1104,105 @@ async function guardarCambios() {
 
 // Reemplazar función guardar anterior
 document.querySelector('button[onclick="guardar()"]')?.addEventListener('click', guardarCambios);
+
+// ══════════════════════════════════════════
+// DATOS INSTITUCIONALES (ET, DIVISIONES, RIESGOS)
+// ══════════════════════════════════════════
+async function cargarDatosET(cui, token) {
+  try {
+    const res = await fetch(`${API}/api/obras/${cui}`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (!res.ok) return; // 404 = sin datos institucionales, empty state se mantiene
+    const data = await res.json();
+    poblarSeccionET(data);
+  } catch (err) {
+    console.warn('Sin datos ET para CUI:', cui, err.message);
+  }
+}
+
+function poblarSeccionET({ obra, et, divisiones, riesgos }) {
+  const esc = s => String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const fmtFecha = f => f ? new Date(f).toLocaleDateString('es-PE', {day:'2-digit',month:'2-digit',year:'numeric'}) : '—';
+  const fmtMonto = v => { const n = Number(v); if (!v || isNaN(n)) return '—'; return n >= 1e6 ? 'S/ '+(n/1e6).toFixed(2)+'M' : 'S/ '+n.toLocaleString('es-PE'); };
+
+  // Ocultar empty states
+  document.getElementById('et-empty-state').style.display = 'none';
+  document.getElementById('et-empty-stats').style.display = 'none';
+
+  // Primera fila: tipo ET, estado, fechas
+  document.getElementById('et-info-grid').style.display = '';
+  document.getElementById('et-nombre').textContent = et?.tipo || obra.nombre || '—';
+  document.getElementById('et-situacion').textContent = et?.estado || '—';
+  document.getElementById('et-inicio').textContent = et ? fmtFecha(et.fecha_inicio) : '—';
+  document.getElementById('et-fin').textContent = et ? fmtFecha(et.fecha_aprobacion) : '—';
+
+  // Status tag
+  const etStatus = document.getElementById('et-status');
+  const estadoLabel = { aprobado: '✓ Aprobado', en_elaboracion: '⏳ En elaboración', observado: '⚠ Observado' };
+  etStatus.textContent = estadoLabel[et?.estado] || (et?.estado ? esc(et.estado) : '⏳ Sin información');
+  etStatus.className = 'sec-tag ' + (et?.estado === 'aprobado' ? 'st-done' : 'st-prog');
+
+  // Segunda fila: monto_et, días hábiles, versión
+  document.getElementById('et-info-grid2').style.display = '';
+  document.getElementById('et-monto').textContent = obra.monto_et ? fmtMonto(obra.monto_et) : '—';
+  document.getElementById('et-dias').textContent = et?.dias_habiles != null ? et.dias_habiles + ' d.h.' : '—';
+  document.getElementById('et-version').textContent = et?.version ? 'v' + et.version : '—';
+
+  // Observaciones
+  if (et?.observaciones) {
+    document.getElementById('et-obs-box').style.display = '';
+    document.getElementById('et-obs').textContent = et.observaciones;
+  }
+
+  // Divisiones
+  if (divisiones.length > 0) {
+    document.getElementById('et-divisiones-wrap').style.display = '';
+    const chipClass = e => e === 'culminado' ? 'cg' : e === 'en_proceso' ? 'cy' : 'cr';
+    const chipLabel = e => ({ culminado: 'Culminado', en_proceso: 'En proceso' }[e] || esc(e || '—'));
+    const tbody = document.getElementById('et-divisiones-tbody');
+    tbody.innerHTML = '';
+    divisiones.forEach(div => {
+      const avp = div.avance_pct != null ? Number(div.avance_pct) : null;
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><strong>${esc(div.nombre)}</strong></td>
+        <td>${esc(div.responsable || '—')}</td>
+        <td style="text-align:center">${div.dias_habiles != null ? div.dias_habiles : '—'}</td>
+        <td><div class="pb"><div class="pbt"><div class="pbf pbf-g" style="width:${avp != null ? Math.min(avp,100) : 0}%"></div></div><span class="pbp">${avp != null ? avp.toFixed(0)+'%' : '—'}</span></div></td>
+        <td><span class="chip ${chipClass(div.estado)}">${chipLabel(div.estado)}</span></td>`;
+      tbody.appendChild(tr);
+    });
+  }
+
+  // Riesgos en view-et
+  if (riesgos.length > 0) {
+    document.getElementById('et-riesgos-wrap').style.display = '';
+    const list = document.getElementById('et-riesgos-list');
+    list.innerHTML = '';
+    riesgos.forEach(r => {
+      const card = document.createElement('div');
+      card.className = 'rcard';
+      card.innerHTML = `
+        <div class="rc-hdr">
+          <span class="rc-badge ${r.nivel === 'ALTO' ? 'rc-a' : 'rc-m'}">${esc(r.nivel)}</span>
+          <span style="font-size:10px;color:var(--muted)">${esc(r.tipo || '')}</span>
+        </div>
+        <div class="rc-desc">${esc(r.descripcion || '—')}</div>
+        <div class="rc-meta">Causa: ${esc(r.causa || 'Sin especificar')}</div>
+        ${r.acuerdo ? `<div class="rc-acuerdo">→ ${esc(r.acuerdo)}</div>` : ''}`;
+      list.appendChild(card);
+    });
+  }
+
+  // Side panel stats
+  document.getElementById('et-stats').style.display = '';
+  const avgAvance = divisiones.length > 0
+    ? (divisiones.reduce((s, d) => s + (Number(d.avance_pct) || 0), 0) / divisiones.length).toFixed(0) + '%'
+    : '—';
+  document.getElementById('et-avance').textContent = avgAvance;
+  document.getElementById('et-estado-val').textContent = esc(et?.estado || '—');
+}
 
 // ══════════════════════════════════════════
 // INIT
