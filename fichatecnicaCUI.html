@@ -215,6 +215,7 @@ body{background:var(--bg);font-family:var(--sans);font-size:13px;color:var(--tex
       <option value="observador">👁 Observador</option>
     </select>
     <button class="btn-dl" onclick="descargarFicha()">↓ Descargar ficha completa</button>
+    <button onclick="cerrarSesion()" style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:8px;padding:7px 14px;font-size:12px;color:rgba(255,255,255,.7);cursor:pointer;font-family:var(--sans)">Cerrar sesión</button>
   </div>
 </div>
 
@@ -475,6 +476,12 @@ body{background:var(--bg);font-family:var(--sans);font-size:13px;color:var(--tex
 // ══════════════════════════════════════════
 let rol = 'residente';
 
+function cerrarSesion() {
+  localStorage.removeItem('expediente_token');
+  localStorage.removeItem('expediente_refresh_token');
+  location.href = 'login.html';
+}
+
 // ══════════════════════════════════════════
 // FETCH AUTENTICADO CON AUTO-REFRESH
 // ══════════════════════════════════════════
@@ -547,6 +554,8 @@ function cambiarRol(r) {
   document.querySelectorAll('#ej-side .btn-save, #ej-side .btn-sec').forEach(el => el.disabled = !puedeEditar);
   const addMesBtn = document.querySelector('#ej-side button[onclick="addMes()"]');
   if(addMesBtn) addMesBtn.disabled = !puedeEditar;
+  // Mostrar/ocultar botones de edición de subcomponentes
+  document.querySelectorAll('.btn-edit-sub').forEach(el => el.style.display = puedeEditar ? '' : 'none');
 }
 
 // ══════════════════════════════════════════
@@ -1094,13 +1103,78 @@ function rellenarFormulario() {
   // ── COMPONENTES DE OBRA ──
   const compContainer = document.getElementById('componentes-list');
   if (compContainer) {
-    if (obra.componentes && obra.componentes.length > 0) {
+    const comps = obraData.componentes || [];
+    const subs  = obraData.subcomponentes || [];
+    if (comps.length > 0) {
       compContainer.innerHTML = '';
-      obra.componentes.forEach(c => {
-        const row = document.createElement('div');
-        row.className = 'pend-row';
-        row.innerHTML = `<span class="pid">${esc(c.item)}</span><span style="flex:1">${esc(c.descripcion)}</span><span class="pmonto">S/ ${Number(c.monto_total||0).toLocaleString('es-PE')}</span>`;
-        compContainer.appendChild(row);
+      const hdr = document.createElement('div');
+      hdr.style.cssText = 'display:grid;grid-template-columns:1fr 110px 110px 110px 60px;gap:4px;padding:4px 10px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)';
+      hdr.innerHTML = '<span>Componente</span><span style="text-align:right">Presup.</span><span style="text-align:right">Ejecutado</span><span style="text-align:right">Saldo</span><span style="text-align:right">Avance</span>';
+      compContainer.appendChild(hdr);
+
+      comps.forEach(c => {
+        const mySubs = subs.filter(s => s.componente_id === c.id);
+        const totalPres  = mySubs.reduce((a,s) => a + Number(s.monto_presupuesto||0), 0);
+        const totalEjec  = mySubs.reduce((a,s) => a + Number(s.monto_ejecutado||0), 0);
+        const totalSaldo = totalPres - totalEjec;
+        const pct = totalPres > 0 ? (totalEjec/totalPres*100) : 0;
+        const colorPct = pct >= 80 ? '#22c55e' : pct >= 40 ? '#f59e0b' : 'var(--muted)';
+        const puedeEditar = rol==='residente'||rol==='especialista';
+
+        const compRow = document.createElement('div');
+        compRow.style.cssText = 'cursor:pointer;display:grid;grid-template-columns:1fr 110px 110px 110px 60px;gap:4px;padding:7px 10px;background:var(--surface2);border-radius:6px;margin-bottom:3px;font-size:11px;align-items:center';
+        compRow.innerHTML = `
+          <span style="font-weight:600;display:flex;align-items:center;gap:5px"><span style="font-size:9px;transition:transform .2s" class="comp-arrow">&#9654;</span>${esc(c.nombre||c.descripcion||'&#8212;')}</span>
+          <span style="text-align:right;font-size:10px;color:var(--muted)">S/ ${totalPres.toLocaleString('es-PE')}</span>
+          <span style="text-align:right;font-size:10px">S/ ${totalEjec.toLocaleString('es-PE')}</span>
+          <span style="text-align:right;font-size:10px">S/ ${totalSaldo.toLocaleString('es-PE')}</span>
+          <span style="text-align:right;font-weight:700;color:${colorPct}">${pct.toFixed(1)}%</span>
+        `;
+
+        const subWrap = document.createElement('div');
+        subWrap.style.cssText = 'display:none;margin-bottom:6px;padding:4px 0 4px 14px';
+
+        if (mySubs.length > 0) {
+          const subHdr = document.createElement('div');
+          subHdr.style.cssText = 'display:grid;grid-template-columns:40px 1fr 100px 100px 100px 55px 30px;gap:4px;padding:3px 8px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);border-bottom:1px solid var(--border)';
+          subHdr.innerHTML = '<span>&#205;tem</span><span>Descripci&#243;n</span><span style="text-align:right">Presup.</span><span style="text-align:right">Ejecutado</span><span style="text-align:right">Saldo</span><span style="text-align:right">Avance</span><span></span>';
+          subWrap.appendChild(subHdr);
+
+          mySubs.forEach(s => {
+            const pres  = Number(s.monto_presupuesto||0);
+            const ejec  = Number(s.monto_ejecutado||0);
+            const saldo = pres - ejec;
+            const sPct  = pres > 0 ? (ejec/pres*100) : 0;
+            const cPct  = sPct >= 80 ? '#22c55e' : sPct >= 40 ? '#f59e0b' : 'var(--muted)';
+
+            const subRow = document.createElement('div');
+            subRow.id = `sub-row-${s.id}`;
+            subRow.style.cssText = 'display:grid;grid-template-columns:40px 1fr 100px 100px 100px 55px 30px;gap:4px;padding:4px 8px;font-size:10px;align-items:center;border-bottom:1px solid var(--border)';
+            const sid = esc(s.id);
+            subRow.innerHTML = `
+              <span style="font-family:monospace;color:var(--muted)">${esc(s.item||'')}</span>
+              <span>${esc(s.descripcion||'')}</span>
+              <span style="text-align:right">S/ ${pres.toLocaleString('es-PE')}</span>
+              <span id="sub-ejec-${sid}" style="text-align:right">S/ ${ejec.toLocaleString('es-PE')}</span>
+              <span id="sub-saldo-${sid}" style="text-align:right">S/ ${saldo.toLocaleString('es-PE')}</span>
+              <span id="sub-pct-${sid}" style="text-align:right;font-weight:700;color:${cPct}">${sPct.toFixed(1)}%</span>
+              <span>${puedeEditar ? `<button class="btn-edit-sub" data-sub-id="${sid}" onclick="editarSubcomponente('${sid}', ${ejec})" style="padding:2px 6px;font-size:9px;border-radius:4px;border:1px solid var(--border);background:var(--surface2);cursor:pointer">&#9998;</button>` : ''}</span>
+            `;
+            subWrap.appendChild(subRow);
+          });
+        } else {
+          subWrap.innerHTML = '<div style="padding:6px 8px;font-size:10px;color:var(--muted)">Sin subcomponentes registrados</div>';
+        }
+
+        compRow.addEventListener('click', () => {
+          const open = subWrap.style.display !== 'none';
+          subWrap.style.display = open ? 'none' : 'block';
+          const arrow = compRow.querySelector('.comp-arrow');
+          if (arrow) arrow.style.transform = open ? '' : 'rotate(90deg)';
+        });
+
+        compContainer.appendChild(compRow);
+        compContainer.appendChild(subWrap);
       });
     } else {
       compContainer.innerHTML = '<div style="padding:12px;background:var(--surface2);border-radius:8px;text-align:center;color:var(--muted);font-size:11px">Sin componentes registrados</div>';
@@ -1109,6 +1183,72 @@ function rellenarFormulario() {
 
   // Actualizar display
   actualizar();
+}
+
+// ══════════════════════════════════════════
+// EDITAR SUBCOMPONENTE (monto_ejecutado)
+// ══════════════════════════════════════════
+async function editarSubcomponente(id, montoActual) {
+  const cell = document.getElementById('sub-ejec-' + id);
+  if (!cell) return;
+
+  const input = document.createElement('input');
+  input.type = 'number';
+  input.min = '0';
+  input.step = '0.01';
+  input.value = montoActual;
+  input.style.cssText = 'width:80px;font-size:10px;padding:2px 4px;border:1px solid var(--accent);border-radius:3px';
+
+  const btnOk = document.createElement('button');
+  btnOk.textContent = '\u2713';
+  btnOk.style.cssText = 'margin-left:3px;padding:2px 5px;font-size:10px;background:var(--accent);color:white;border:none;border-radius:3px;cursor:pointer';
+
+  const btnCan = document.createElement('button');
+  btnCan.textContent = '\u2715';
+  btnCan.style.cssText = 'margin-left:2px;padding:2px 5px;font-size:10px;background:var(--surface2);border:1px solid var(--border);border-radius:3px;cursor:pointer';
+
+  const restore = () => { cell.textContent = 'S/ ' + Number(montoActual).toLocaleString('es-PE'); };
+  btnCan.onclick = restore;
+
+  cell.innerHTML = '';
+  cell.appendChild(input);
+  cell.appendChild(btnOk);
+  cell.appendChild(btnCan);
+  input.focus();
+
+  const cui = new URLSearchParams(location.search).get('cui');
+
+  btnOk.onclick = async () => {
+    const nuevoMonto = parseFloat(input.value);
+    if (isNaN(nuevoMonto) || nuevoMonto < 0) { toast('Monto inv\u00e1lido'); return; }
+    btnOk.disabled = true;
+    try {
+      const r = await authedFetch(`${API}/api/obras/${cui}/subcomponentes/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ monto_ejecutado: nuevoMonto }),
+      });
+      if (!r.ok) { const d = await r.json(); throw new Error(d.error || r.status); }
+
+      // Actualizar obraData en memoria
+      const sub = (obraData.subcomponentes || []).find(s => s.id === id);
+      if (sub) sub.monto_ejecutado = nuevoMonto;
+
+      // Actualizar celdas sin re-render completo
+      const pres  = Number(sub?.monto_presupuesto || 0);
+      const saldo = pres - nuevoMonto;
+      const pct   = pres > 0 ? (nuevoMonto/pres*100) : 0;
+      cell.textContent = 'S/ ' + nuevoMonto.toLocaleString('es-PE');
+      const saldoCell = document.getElementById('sub-saldo-' + id);
+      const pctCell   = document.getElementById('sub-pct-'   + id);
+      if (saldoCell) saldoCell.textContent = 'S/ ' + saldo.toLocaleString('es-PE');
+      if (pctCell)   { pctCell.textContent = pct.toFixed(1) + '%'; pctCell.style.color = pct >= 80 ? '#22c55e' : pct >= 40 ? '#f59e0b' : 'var(--muted)'; }
+      toast('\u2705 Subcomponente actualizado');
+    } catch (err) {
+      toast('\u274c ' + err.message);
+      btnOk.disabled = false;
+    }
+  };
 }
 
 // ══════════════════════════════════════════
@@ -1170,12 +1310,13 @@ async function cargarDatosET(cui, token) {
     if (!res.ok) return;
     const data = await res.json();
 
-    // Merge ejecucion / avances / componentes / trabajos en obraData
-    obraData.ejecucion        = data.ejecucion  || null;
-    obraData.avances          = data.avances    || [];
-    obraData.componentes      = data.componentes|| [];
-    obraData.trabajos_pendientes = data.trabajos || [];
-    obraData.riesgos          = data.riesgos    || [];
+    // Merge ejecucion / avances / componentes / subcomponentes / trabajos en obraData
+    obraData.ejecucion           = data.ejecucion     || null;
+    obraData.avances             = data.avances       || [];
+    obraData.componentes         = data.componentes   || [];
+    obraData.subcomponentes      = data.subcomponentes|| [];
+    obraData.trabajos_pendientes = data.trabajos      || [];
+    obraData.riesgos             = data.riesgos       || [];
 
     rellenarFormulario();
     poblarSeccionET(data);
