@@ -475,6 +475,40 @@ body{background:var(--bg);font-family:var(--sans);font-size:13px;color:var(--tex
 // ══════════════════════════════════════════
 let rol = 'residente';
 
+// ══════════════════════════════════════════
+// FETCH AUTENTICADO CON AUTO-REFRESH
+// ══════════════════════════════════════════
+async function authedFetch(url, options = {}) {
+  const token = localStorage.getItem('expediente_token');
+  const headers = { ...(options.headers || {}), 'Authorization': `Bearer ${token}` };
+
+  let res = await fetch(url, { ...options, headers });
+
+  if (res.status === 401) {
+    // Intentar renovar el token
+    const refreshToken = localStorage.getItem('expediente_refresh_token');
+    if (!refreshToken) { window.location.href = 'login.html'; return res; }
+
+    const refreshRes = await fetch(`${API}/api/auth/refresh`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refresh_token: refreshToken }),
+    });
+
+    if (!refreshRes.ok) { window.location.href = 'login.html'; return res; }
+
+    const { access_token, refresh_token: newRefresh } = await refreshRes.json();
+    localStorage.setItem('expediente_token', access_token);
+    localStorage.setItem('expediente_refresh_token', newRefresh);
+
+    // Reintentar con el nuevo token
+    const retryHeaders = { ...(options.headers || {}), 'Authorization': `Bearer ${access_token}` };
+    res = await fetch(url, { ...options, headers: retryHeaders });
+  }
+
+  return res;
+}
+
 const mesesBase = [];
 let meses = JSON.parse(JSON.stringify(mesesBase));
 
@@ -1086,7 +1120,6 @@ async function guardarCambios() {
   btnSave.textContent = 'Guardando...';
 
   try {
-    const token = localStorage.getItem('expediente_token');
     const payload = {
       numero_contrato:         document.getElementById('f-contrato').value   || null,
       contratista:             document.getElementById('f-contratista').value || null,
@@ -1103,12 +1136,9 @@ async function guardarCambios() {
       avance_programado_monto: parseFloat(document.getElementById('f-mprog').value) || 0,
     };
 
-    const res = await fetch(`${API}/api/obras/${cuiActual}/ejecucion`, {
+    const res = await authedFetch(`${API}/api/obras/${cuiActual}/ejecucion`, {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
     const data = await res.json();
@@ -1136,9 +1166,7 @@ async function guardarCambios() {
 // ══════════════════════════════════════════
 async function cargarDatosET(cui, token) {
   try {
-    const res = await fetch(`${API}/api/obras/${cui}`, {
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
+    const res = await authedFetch(`${API}/api/obras/${cui}`);
     if (!res.ok) return;
     const data = await res.json();
 

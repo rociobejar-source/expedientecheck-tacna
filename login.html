@@ -275,6 +275,7 @@
 
         // Guardar token y datos del usuario
         localStorage.setItem('expediente_token', data.access_token);
+        localStorage.setItem('expediente_refresh_token', data.refresh_token);
         localStorage.setItem('expediente_user', JSON.stringify(data.user));
 
         // Redirigir: si viene con cui, va a la ficha; si no, va al dashboard
