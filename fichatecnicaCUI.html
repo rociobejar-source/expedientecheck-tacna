@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>ExpedienteCheck · Ficha de Monitoreo</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
   // Protección de autenticación - ejecutar antes de cargar el contenido
   (function() {
@@ -18,10 +17,9 @@
   })();
 
   // Estado global
+  const API = 'https://api.expedientecheck.com';
   let obraData = null;
   let cuiActual = null;
-
-
 </script>
 <style>
 :root {
@@ -622,21 +620,19 @@ function mostrarFormTrabajos() {
 }
 
 async function agregarRiesgo(nivel, tipo, descripcion, causa, acuerdo) {
+  if (!obraData?.id) {
+    toast('❌ No se puede identificar la obra');
+    return;
+  }
   try {
-    const { error } = await supabase
-      .from('riesgos')
-      .insert([{
-        obra_id: obraData.id,
-        nivel,
-        tipo,
-        descripcion,
-        causa,
-        acuerdo,
-        resuelto: false
-      }]);
-
-    if (error) throw error;
-
+    const token = localStorage.getItem('expediente_token');
+    const res = await fetch(`${API}/api/obras/${obraData.id}/riesgos`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify({ nivel, tipo, descripcion, causa, acuerdo }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Error al guardar');
     toast('✓ Riesgo agregado');
     cargarDatosObra();
   } catch (err) {
@@ -645,19 +641,19 @@ async function agregarRiesgo(nivel, tipo, descripcion, causa, acuerdo) {
 }
 
 async function agregarTrabajo(partida, descripcion, monto) {
+  if (!obraData?.id) {
+    toast('❌ No se puede identificar la obra');
+    return;
+  }
   try {
-    const { error } = await supabase
-      .from('trabajos_pendientes')
-      .insert([{
-        obra_id: obraData.id,
-        partida,
-        descripcion,
-        monto,
-        completado: false
-      }]);
-
-    if (error) throw error;
-
+    const token = localStorage.getItem('expediente_token');
+    const res = await fetch(`${API}/api/obras/${obraData.id}/trabajos`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify({ partida, descripcion, monto }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Error al guardar');
     toast('✓ Trabajo agregado');
     cargarDatosObra();
   } catch (err) {
@@ -878,32 +874,34 @@ async function cargarDatosObra() {
   document.querySelector('.tb-cui').textContent = `CUI ${cuiActual}`;
 
   try {
-    // Usar el cliente Supabase global
-    const client = window.supabase.createClient(
-      'https://xrbyvwliffdvfdmshaix.supabase.co',
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhyYnl2d2xpZmZkdmZkbXNoYWl4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4NTMwMzAsImV4cCI6MjA5MTQyOTAzMH0.IaoSfrjeD2C_cZbQI7BWRjKZo8iyPLrD5q6qfqHewd8'
-    );
+    // Usar el backend (no Supabase directo — elimina la clave hardcodeada)
+    const token = localStorage.getItem('expediente_token');
+    const res = await fetch(`${API}/api/ssi/${cuiActual}`, {
+      headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+    });
 
-    const { data: ssi } = await client
-      .from('ssi_inversiones')
-      .select('*')
-      .eq('codigo_unico', cuiActual)
-      .maybeSingle();
+    const json = (res.ok) ? await res.json() : null;
+    const ssi = json?.ssi || null;
+
+    // Obtener el id de la obra desde localStorage (guardado al navegar desde index.html)
+    const obraActualLS = JSON.parse(localStorage.getItem('obra_actual') || '{}');
+    const obraId = (obraActualLS.cui === cuiActual) ? obraActualLS.id : null;
 
     if (!ssi) {
       toast('⚠️ CUI no encontrado');
-      obraData = { cui: cuiActual };
+      obraData = { cui: cuiActual, id: obraId };
       rellenarFormulario();
       return;
     }
 
     obraData = {
-      cui: cuiActual,
-      nombre: ssi.nombre_inversion || 'Sin nombre',
+      id:             obraId,
+      cui:            cuiActual,
+      nombre:         ssi.nombre_inversion || 'Sin nombre',
       costo_proyecto: Number(ssi.costo_actualizado) || 0,
-      pim_2026: Number(ssi.pim_ano_vigente) || 0,
-      dev_acumulado: Number(ssi.dev_acumulado) || 0,
-      devengado_2026: Number(ssi.devengado_2026) || 0
+      pim_2026:       Number(ssi.pim_ano_vigente)   || 0,
+      dev_acumulado:  Number(ssi.dev_acumulado)      || 0,
+      devengado_2026: Number(ssi.devengado_2026)     || 0,
     };
 
     console.log('✓ Datos:', obraData);
@@ -918,6 +916,9 @@ async function cargarDatosObra() {
 
 function rellenarFormulario() {
   if (!obraData) return;
+
+  // Escapar HTML para prevenir XSS al renderizar datos de la BD
+  const esc = s => String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 
   const obra = obraData;
   const ejec = obra.ejecucion || {};
@@ -958,12 +959,12 @@ function rellenarFormulario() {
     riesgosContainer.innerHTML = obra.riesgos.map(r => `
       <div class="rcard">
         <div class="rc-hdr">
-          <span class="rc-badge ${r.nivel === 'ALTO' ? 'rc-a' : 'rc-m'}">${r.nivel}</span>
-          <span style="font-size:10px;color:var(--muted)">${r.tipo || ''}</span>
+          <span class="rc-badge ${r.nivel === 'ALTO' ? 'rc-a' : 'rc-m'}">${esc(r.nivel)}</span>
+          <span style="font-size:10px;color:var(--muted)">${esc(r.tipo)}</span>
         </div>
-        <div class="rc-desc">${r.description || ''}</div>
-        <div class="rc-meta">Causa: ${r.causa || 'Sin especificar'}</div>
-        <div class="rc-acuerdo">→ ${r.acuerdo || 'Sin acuerdo registrado'}</div>
+        <div class="rc-desc">${esc(r.description)}</div>
+        <div class="rc-meta">Causa: ${esc(r.causa) || 'Sin especificar'}</div>
+        <div class="rc-acuerdo">→ ${esc(r.acuerdo) || 'Sin acuerdo registrado'}</div>
       </div>
     `).join('');
   }
@@ -976,8 +977,8 @@ function rellenarFormulario() {
       totalPendiente += t.monto || 0;
       return `
         <div class="pend-row">
-          <span class="pid">${t.partida || '—'}</span>
-          <span style="flex:1">${t.description || ''}</span>
+          <span class="pid">${esc(t.partida)}</span>
+          <span style="flex:1">${esc(t.description)}</span>
           <span class="pmonto">S/ ${(t.monto || 0).toLocaleString('es-PE')}</span>
         </div>
       `;

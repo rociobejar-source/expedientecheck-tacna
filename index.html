@@ -1298,7 +1298,10 @@ document.getElementById('btn-save').addEventListener('click', async () => {
   try {
     const res  = await fetch(`${API}/api/obras/${obraActual.id}/avance`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('expediente_token')}`,
+      },
       body: JSON.stringify(payload),
     });
     const data = await res.json();
