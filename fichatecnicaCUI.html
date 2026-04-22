@@ -452,7 +452,7 @@ body{background:var(--bg);font-family:var(--sans);font-size:13px;color:var(--tex
     </div>
     <!-- Save row sticky -->
     <div class="save-row">
-      <button class="btn-save" onclick="guardar()">💾 Guardar cambios</button>
+      <button class="btn-save" onclick="guardarCambios()">💾 Guardar cambios</button>
       <button class="btn-sec" onclick="limpiar()">Resetear</button>
       <span class="saved-badge" id="saved-ok">✓ Guardado</span>
     </div>
@@ -1102,8 +1102,6 @@ async function guardarCambios() {
   }
 }
 
-// Reemplazar función guardar anterior
-document.querySelector('button[onclick="guardar()"]')?.addEventListener('click', guardarCambios);
 
 // ══════════════════════════════════════════
 // DATOS INSTITUCIONALES (ET, DIVISIONES, RIESGOS)
