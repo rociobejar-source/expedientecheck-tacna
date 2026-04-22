@@ -402,6 +402,14 @@ body{background:var(--bg);font-family:var(--sans);font-size:13px;color:var(--tex
         <button onclick="mostrarFormTrabajos()" class="btn-save" style="padding:6px 14px;font-size:10px">+ Agregar trabajo</button>
       </div>
     </div>
+
+    <!-- Componentes de obra -->
+    <div style="margin:14px 0 8px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted)">
+      Componentes de obra
+    </div>
+    <div id="componentes-list" style="border:1.5px solid var(--border);border-radius:8px;padding:10px 12px">
+      <div style="padding:12px;background:var(--surface2);border-radius:8px;text-align:center;color:var(--muted);font-size:11px">Sin componentes registrados</div>
+    </div>
   </div>
 
   <!-- SIDE: EJ editable form -->
@@ -970,16 +978,25 @@ function rellenarFormulario() {
   document.getElementById('d-saldo-pendiente').textContent = 'S/ ' + saldoPendiente.toLocaleString('es-PE', {minimumFractionDigits:2});
 
   // ── EJ — EJECUCIÓN ──
-  document.getElementById('f-contrato').value = ejec.contrato_numero || '';
-  document.getElementById('f-contratista').value = ejec.contratista || '';
-  document.getElementById('f-residente').value = ejec.residente_nombre || '';
-  document.getElementById('f-inspector').value = ejec.inspector_nombre || '';
-  document.getElementById('f-fi').value = ejec.fecha_inicio || '';
-  document.getElementById('f-ff').value = ejec.fecha_fin_contractual || '';
-  document.getElementById('f-situacion').value = ejec.situacion_actual || '';
-  document.getElementById('f-fis').value = ejec.avance_fisico_pct || 0;
-  document.getElementById('f-cert').value = ejec.avance_certif_pct || 0;
-  document.getElementById('f-prog').value = ejec.avance_programado_pct || 0;
+  document.getElementById('f-contrato').value   = ejec.numero_contrato        || '';
+  document.getElementById('f-contratista').value= ejec.contratista            || '';
+  document.getElementById('f-residente').value  = ejec.residente              || '';
+  document.getElementById('f-inspector').value  = ejec.inspector              || '';
+  document.getElementById('f-fi').value         = ejec.fecha_inicio_contractual|| '';
+  document.getElementById('f-ff').value         = ejec.fecha_fin_contractual  || '';
+  document.getElementById('f-situacion').value  = ejec.situacion_actual       || '';
+  document.getElementById('f-fis').value        = ejec.avance_fisico_pct      || 0;
+  document.getElementById('f-mfis').value       = ejec.avance_fisico_monto    || '';
+  document.getElementById('f-cert').value       = ejec.avance_certif_pct      || 0;
+  document.getElementById('f-mcert').value      = ejec.avance_certif_monto    || '';
+  document.getElementById('f-prog').value       = ejec.avance_programado_pct  || 0;
+  document.getElementById('f-mprog').value      = ejec.avance_programado_monto|| '';
+
+  if (ejec.fecha_corte) {
+    const fc = new Date(ejec.fecha_corte);
+    document.getElementById('d-fecha-corte').textContent =
+      fc.toLocaleDateString('es-PE', { day:'2-digit', month:'2-digit', year:'numeric' });
+  }
 
   // ── RIESGOS ──
   const riesgosContainer = document.getElementById('riesgos-list');
@@ -1026,18 +1043,34 @@ function rellenarFormulario() {
     document.getElementById('prog-empty-msg').style.display = 'none';
 
     meses = obra.avances.map(av => ({
-      mes: av.periodo,
-      pb: av.prog_base_acum,
-      pa: av.prog_actual_acum,
-      af: av.avance_fisico_acum,
-      ac: av.devengado_acum,
-      activo: false
+      mes:    av.periodo,
+      pb:     av.prog_base_pct,
+      pa:     av.prog_actual_pct,
+      af:     av.av_fisico_pct,
+      ac:     av.av_certif_pct,
+      activo: av.es_periodo_actual || false
     }));
     renderMeses();
   } else {
     document.getElementById('prog-tabla-container').style.display = 'none';
     document.getElementById('prog-empty-msg').style.display = 'block';
     meses = [];
+  }
+
+  // ── COMPONENTES DE OBRA ──
+  const compContainer = document.getElementById('componentes-list');
+  if (compContainer) {
+    if (obra.componentes && obra.componentes.length > 0) {
+      compContainer.innerHTML = '';
+      obra.componentes.forEach(c => {
+        const row = document.createElement('div');
+        row.className = 'pend-row';
+        row.innerHTML = `<span class="pid">${esc(c.item)}</span><span style="flex:1">${esc(c.descripcion)}</span><span class="pmonto">S/ ${Number(c.monto_total||0).toLocaleString('es-PE')}</span>`;
+        compContainer.appendChild(row);
+      });
+    } else {
+      compContainer.innerHTML = '<div style="padding:12px;background:var(--surface2);border-radius:8px;text-align:center;color:var(--muted);font-size:11px">Sin componentes registrados</div>';
+    }
   }
 
   // Actualizar display
@@ -1053,43 +1086,38 @@ async function guardarCambios() {
   btnSave.textContent = 'Guardando...';
 
   try {
-    const datosEjecucion = {
-      numero_contrato: document.getElementById('f-contrato').value || null,
-      contratista: document.getElementById('f-contratista').value || null,
-      residente: document.getElementById('f-residente').value || null,
-      inspector: document.getElementById('f-inspector').value || null,
-      fecha_inicio_contractual: document.getElementById('f-fi').value || null,
-      fecha_fin_contractual: document.getElementById('f-ff').value || null,
-      situacion: document.getElementById('f-situacion').value || null,
-      avance_fisico: parseFloat(document.getElementById('f-fis').value) || 0,
-      avance_financiero: parseFloat(document.getElementById('f-cert').value) || 0,
-      avance_programado: parseFloat(document.getElementById('f-prog').value) || 0,
-      fecha_actualizacion: new Date().toISOString(),
+    const token = localStorage.getItem('expediente_token');
+    const payload = {
+      numero_contrato:         document.getElementById('f-contrato').value   || null,
+      contratista:             document.getElementById('f-contratista').value || null,
+      residente:               document.getElementById('f-residente').value   || null,
+      inspector:               document.getElementById('f-inspector').value   || null,
+      fecha_inicio_contractual:document.getElementById('f-fi').value         || null,
+      fecha_fin_contractual:   document.getElementById('f-ff').value         || null,
+      situacion_actual:        document.getElementById('f-situacion').value  || null,
+      avance_fisico_pct:       parseFloat(document.getElementById('f-fis').value)   || 0,
+      avance_fisico_monto:     parseFloat(document.getElementById('f-mfis').value)  || 0,
+      avance_certif_pct:       parseFloat(document.getElementById('f-cert').value)  || 0,
+      avance_certif_monto:     parseFloat(document.getElementById('f-mcert').value) || 0,
+      avance_programado_pct:   parseFloat(document.getElementById('f-prog').value)  || 0,
+      avance_programado_monto: parseFloat(document.getElementById('f-mprog').value) || 0,
     };
 
-    // Guardar en tabla ejecuciones
-    if (obraData.ejecucion?.id) {
-      const { error } = await supabase
-        .from('ejecuciones')
-        .update(datosEjecucion)
-        .eq('id', obraData.ejecucion.id);
+    const res = await fetch(`${API}/api/obras/${cuiActual}/ejecucion`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Error al guardar');
 
-      if (error) throw new Error('Error en ejecuciones: ' + error.message);
-    } else {
-      // Si no existe, crear nuevo registro
-      const { error, data: newEjec } = await supabase
-        .from('ejecuciones')
-        .insert([{ ...datosEjecucion, obra_id: obraData.id }])
-        .select()
-        .single();
-
-      if (error) throw new Error('Error al crear ejecución: ' + error.message);
-      obraData.ejecucion = newEjec;
-    }
+    if (!obraData.ejecucion) obraData.ejecucion = {};
+    Object.assign(obraData.ejecucion, payload);
 
     toast('✓ Cambios guardados correctamente');
-    Object.assign(obraData.ejecucion, datosEjecucion);
-
     const badge = document.getElementById('saved-ok');
     badge.classList.add('show');
     setTimeout(() => badge.classList.remove('show'), 2500);
@@ -1111,8 +1139,17 @@ async function cargarDatosET(cui, token) {
     const res = await fetch(`${API}/api/obras/${cui}`, {
       headers: { 'Authorization': `Bearer ${token}` }
     });
-    if (!res.ok) return; // 404 = sin datos institucionales, empty state se mantiene
+    if (!res.ok) return;
     const data = await res.json();
+
+    // Merge ejecucion / avances / componentes / trabajos en obraData
+    obraData.ejecucion        = data.ejecucion  || null;
+    obraData.avances          = data.avances    || [];
+    obraData.componentes      = data.componentes|| [];
+    obraData.trabajos_pendientes = data.trabajos || [];
+    obraData.riesgos          = data.riesgos    || [];
+
+    rellenarFormulario();
     poblarSeccionET(data);
   } catch (err) {
     console.warn('Sin datos ET para CUI:', cui, err.message);
