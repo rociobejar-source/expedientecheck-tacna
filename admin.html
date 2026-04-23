@@ -48,9 +48,43 @@
     }
     .btn-logout:hover { border-color: #fff; color: #fff; }
 
+    /* ── TABS ── */
+    .tabs-bar {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px;
+      display: flex;
+      gap: 4px;
+    }
+    .tab-btn {
+      background: transparent;
+      border: none;
+      border-bottom: 2px solid transparent;
+      padding: 14px 16px 12px;
+      font-family: var(--sans);
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--muted);
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-bottom: -1px;
+    }
+    .tab-btn:hover { color: var(--text); }
+    .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+
     /* ── MAIN ── */
-    main { padding: 28px 24px; max-width: 1200px; margin: 0 auto; }
-    .page-header { margin-bottom: 28px; }
+    main { padding: 28px 24px; max-width: 1300px; margin: 0 auto; }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    .panel-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
     .page-title { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; }
     .page-subtitle { font-size: 13px; color: var(--muted); margin-top: 3px; }
 
@@ -65,7 +99,7 @@
       padding: 9px 16px;
       cursor: pointer;
       transition: opacity 0.2s;
-      margin-top: 16px;
+      white-space: nowrap;
     }
     .btn-nuevo:hover { opacity: 0.9; }
 
@@ -76,9 +110,8 @@
       border-radius: 10px;
       overflow: hidden;
       overflow-x: auto;
-      margin-top: 20px;
     }
-    table { width: 100%; border-collapse: collapse; min-width: 900px; }
+    table { width: 100%; border-collapse: collapse; min-width: 800px; }
     thead th {
       background: var(--header);
       color: #9ca3af;
@@ -96,12 +129,35 @@
     tbody td { padding: 13px 14px; font-size: 13px; vertical-align: middle; }
 
     .user-email { font-weight: 600; font-family: var(--mono); font-size: 12px; color: var(--muted); }
-    .user-name { color: var(--text); }
     .user-rol { display: inline-block; background: var(--accent-lt); color: var(--accent); font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 4px; }
     .user-rol.supervisor { background: #fff3cd; color: #856404; }
     .user-rol.especialista { background: #d1ecf1; color: #0c5460; }
+    .user-rol.admin { background: #f3e8ff; color: #6d28d9; }
 
-    .btn-editar, .btn-eliminar {
+    .cui-badge {
+      font-family: var(--mono);
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--accent);
+      background: var(--accent-lt);
+      padding: 3px 8px;
+      border-radius: 4px;
+    }
+    .alerta-badge {
+      display: inline-block;
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      margin-right: 6px;
+      vertical-align: middle;
+    }
+    .alerta-verde  { background: #22c55e; }
+    .alerta-amarillo { background: #f59e0b; }
+    .alerta-rojo   { background: #ef4444; }
+
+    .obra-nombre { font-weight: 500; color: var(--text); max-width: 340px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .obra-municipalidad { font-size: 12px; color: var(--muted); }
+
+    .btn-accion {
       background: transparent;
       border: 1px solid var(--border);
       border-radius: 4px;
@@ -110,9 +166,11 @@
       cursor: pointer;
       transition: all 0.2s;
       margin-right: 6px;
+      font-family: var(--sans);
     }
-    .btn-editar:hover { border-color: var(--accent); color: var(--accent); }
-    .btn-eliminar:hover { border-color: var(--rojo); color: var(--rojo); }
+    .btn-accion.editar:hover  { border-color: var(--accent); color: var(--accent); }
+    .btn-accion.ver:hover     { border-color: #6366f1; color: #6366f1; }
+    .btn-accion.eliminar:hover { border-color: var(--rojo); color: var(--rojo); }
 
     /* ── MODAL ── */
     .overlay {
@@ -125,141 +183,88 @@
       justify-content: center;
     }
     .overlay.open { display: flex; }
-
     .modal {
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: 12px;
       padding: 28px;
-      max-width: 500px;
+      max-width: 520px;
       width: 100%;
-      max-height: 90vh;
+      max-height: 92vh;
       overflow-y: auto;
       position: relative;
     }
-
     .modal-close {
-      position: absolute;
-      top: 16px; right: 16px;
-      background: transparent;
-      border: none;
-      font-size: 20px;
-      cursor: pointer;
-      color: var(--muted);
+      position: absolute; top: 16px; right: 16px;
+      background: transparent; border: none;
+      font-size: 20px; cursor: pointer; color: var(--muted);
     }
-
     .modal-title { font-size: 20px; font-weight: 700; margin-bottom: 20px; }
 
-    .form-group {
-      margin-bottom: 16px;
-    }
+    .form-group { margin-bottom: 16px; }
     .form-label {
-      display: block;
-      font-size: 12px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      color: var(--muted);
-      margin-bottom: 6px;
+      display: block; font-size: 12px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.5px;
+      color: var(--muted); margin-bottom: 6px;
     }
     .form-input, .form-select {
-      width: 100%;
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 10px 12px;
-      font-family: var(--sans);
-      font-size: 14px;
-      color: var(--text);
-      background: white;
+      width: 100%; border: 1px solid var(--border); border-radius: 6px;
+      padding: 10px 12px; font-family: var(--sans); font-size: 14px;
+      color: var(--text); background: white;
     }
     .form-input:focus, .form-select:focus {
-      outline: none;
-      border-color: var(--accent);
+      outline: none; border-color: var(--accent);
       box-shadow: 0 0 0 3px var(--accent-lt);
     }
+    .form-input:disabled { background: #f5f3ee; color: var(--muted); }
+
+    /* SSI preview card */
+    .ssi-preview {
+      display: none;
+      background: var(--accent-lt);
+      border: 1px solid #b7e5cb;
+      border-radius: 8px;
+      padding: 14px 16px;
+      margin-bottom: 16px;
+    }
+    .ssi-preview.show { display: block; }
+    .ssi-preview p { font-size: 13px; margin-bottom: 4px; color: var(--text); }
+    .ssi-preview p strong { color: var(--accent); }
+    .ssi-preview .ssi-nombre { font-weight: 600; font-size: 14px; color: var(--text); margin-bottom: 8px; }
 
     .form-input-tags {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-      padding: 8px;
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      min-height: 38px;
-      align-items: center;
+      display: flex; flex-wrap: wrap; gap: 6px; padding: 8px;
+      border: 1px solid var(--border); border-radius: 6px;
+      min-height: 38px; align-items: center;
     }
     .tag {
-      background: var(--accent-lt);
-      color: var(--accent);
-      padding: 4px 8px;
-      border-radius: 4px;
-      font-size: 12px;
-      font-weight: 600;
-      display: flex;
-      align-items: center;
-      gap: 4px;
+      background: var(--accent-lt); color: var(--accent);
+      padding: 4px 8px; border-radius: 4px; font-size: 12px;
+      font-weight: 600; display: flex; align-items: center; gap: 4px;
     }
-    .tag button {
-      background: none;
-      border: none;
-      color: var(--accent);
-      cursor: pointer;
-      font-weight: bold;
-      padding: 0;
-    }
-    .form-input-tags input {
-      flex: 1;
-      border: none;
-      outline: none;
-      font-family: var(--sans);
-      font-size: 14px;
-      min-width: 100px;
-    }
+    .tag button { background: none; border: none; color: var(--accent); cursor: pointer; font-weight: bold; padding: 0; }
+    .form-input-tags input { flex: 1; border: none; outline: none; font-family: var(--sans); font-size: 14px; min-width: 100px; }
 
-    .btn-save, .btn-cancel {
-      width: 100%;
-      border: none;
-      border-radius: 6px;
-      padding: 11px 16px;
-      font-family: var(--sans);
-      font-size: 14px;
-      font-weight: 600;
-      cursor: pointer;
-      margin-top: 8px;
-      transition: opacity 0.2s;
+    .btn-save, .btn-cancel, .btn-buscar-ssi {
+      width: 100%; border: none; border-radius: 6px;
+      padding: 11px 16px; font-family: var(--sans); font-size: 14px;
+      font-weight: 600; cursor: pointer; margin-top: 8px; transition: opacity 0.2s;
     }
-    .btn-save {
-      background: var(--accent);
-      color: white;
-    }
+    .btn-save    { background: var(--accent); color: white; }
     .btn-save:hover { opacity: 0.9; }
-    .btn-cancel {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      color: var(--text);
-    }
+    .btn-buscar-ssi { background: #f0f0f0; color: var(--text); border: 1px solid var(--border); }
+    .btn-buscar-ssi:hover { background: #e5e3de; }
+    .btn-cancel  { background: var(--surface); border: 1px solid var(--border); color: var(--text); }
     .btn-cancel:hover { background: #f5f3ee; }
 
     .error-msg {
-      background: var(--rojo-lt);
-      border: 1px solid #f5c6c2;
-      border-radius: 6px;
-      padding: 10px 12px;
-      font-size: 13px;
-      color: var(--rojo);
-      margin-bottom: 16px;
-      display: none;
+      background: var(--rojo-lt); border: 1px solid #f5c6c2;
+      border-radius: 6px; padding: 10px 12px; font-size: 13px;
+      color: var(--rojo); margin-bottom: 16px; display: none;
     }
     .error-msg.show { display: block; }
-
-    .loading { text-align: center; padding: 20px; color: var(--muted); }
-
-    .empty-state {
-      text-align: center;
-      padding: 40px 20px;
-      color: var(--muted);
-    }
-    .empty-state p { font-size: 14px; margin-bottom: 16px; }
+    .loading { text-align: center; padding: 40px; color: var(--muted); }
+    .empty-state { text-align: center; padding: 40px 20px; color: var(--muted); }
   </style>
 </head>
 <body>
@@ -271,57 +276,89 @@
     </div>
   </header>
 
+  <!-- TABS -->
+  <div class="tabs-bar">
+    <button class="tab-btn active" data-tab="usuarios">Usuarios</button>
+    <button class="tab-btn" data-tab="obras">Obras / CUIs</button>
+  </div>
+
   <main>
-    <div class="page-header">
-      <h1 class="page-title">Panel <span style="font-weight:300;">de Administración</span></h1>
-      <p class="page-subtitle">Gestión de usuarios y asignación de CUIs</p>
+    <!-- ── TAB: USUARIOS ── -->
+    <div class="tab-panel active" id="panel-usuarios">
+      <div class="panel-header">
+        <div>
+          <h1 class="page-title">Gestión de <span style="font-weight:300;">Usuarios</span></h1>
+          <p class="page-subtitle">Crear, editar y asignar CUIs a usuarios</p>
+        </div>
+        <button class="btn-nuevo" id="btn-new-user">+ Crear usuario</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Usuario</th>
+              <th>Email</th>
+              <th>Rol</th>
+              <th>CUIs asignados</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-usuarios">
+            <tr><td colspan="5" class="loading">Cargando...</td></tr>
+          </tbody>
+        </table>
+      </div>
     </div>
 
-    <button class="btn-nuevo" id="btn-new-user">+ Crear usuario</button>
-
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>Usuario</th>
-            <th>Email</th>
-            <th>Rol</th>
-            <th>CUIs asignados</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody id="tbody">
-          <tr><td colspan="5" style="text-align:center;padding:40px;color:var(--muted);">Cargando...</td></tr>
-        </tbody>
-      </table>
+    <!-- ── TAB: OBRAS ── -->
+    <div class="tab-panel" id="panel-obras">
+      <div class="panel-header">
+        <div>
+          <h1 class="page-title">Gestión de <span style="font-weight:300;">Obras</span></h1>
+          <p class="page-subtitle">Registrar nuevos CUIs y administrar obras activas</p>
+        </div>
+        <button class="btn-nuevo" id="btn-new-obra">+ Registrar CUI</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>CUI</th>
+              <th>Nombre</th>
+              <th>Municipalidad</th>
+              <th>Monto</th>
+              <th>Alerta</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-obras">
+            <tr><td colspan="6" class="loading">Cargando...</td></tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   </main>
 
   <!-- MODAL: Crear/Editar Usuario -->
-  <div class="overlay" id="overlay">
+  <div class="overlay" id="overlay-usuario">
     <div class="modal">
-      <button class="modal-close" id="modal-close">✕</button>
-      <h2 class="modal-title" id="modal-title">Crear usuario</h2>
-
-      <div class="error-msg" id="error-msg"></div>
-
+      <button class="modal-close" id="modal-user-close">✕</button>
+      <h2 class="modal-title" id="modal-user-title">Crear usuario</h2>
+      <div class="error-msg" id="error-user"></div>
       <form id="form-user">
         <div class="form-group">
           <label class="form-label">Email</label>
           <input type="email" id="inp-email" class="form-input" placeholder="usuario@mpt.gob.pe" required/>
         </div>
-
         <div class="form-group" id="password-group">
           <label class="form-label">Contraseña</label>
           <input type="password" id="inp-password" class="form-input" placeholder="••••••••" required/>
           <p style="font-size:11px;color:var(--muted);margin-top:4px;">Mínimo 6 caracteres</p>
         </div>
-
         <div class="form-group">
           <label class="form-label">Nombre completo</label>
           <input type="text" id="inp-name" class="form-input" placeholder="Juan Pérez"/>
         </div>
-
         <div class="form-group">
           <label class="form-label">Rol</label>
           <select id="inp-rol" class="form-select" required>
@@ -331,17 +368,54 @@
             <option value="admin">Administrador</option>
           </select>
         </div>
-
         <div class="form-group">
           <label class="form-label">CUIs asignados</label>
           <div class="form-input-tags" id="cuis-container">
-            <input id="inp-cui" type="text" placeholder="Ingresa CUI y presiona Enter" pattern="\d{7}"/>
+            <input id="inp-cui-user" type="text" placeholder="Ingresa CUI y presiona Enter" pattern="\d{7}"/>
           </div>
           <p style="font-size:11px;color:var(--muted);margin-top:4px;">CUIs de 7 dígitos (ej: 2677250)</p>
         </div>
+        <button type="submit" class="btn-save" id="btn-save-user">Guardar usuario</button>
+        <button type="button" class="btn-cancel" id="btn-cancel-user">Cancelar</button>
+      </form>
+    </div>
+  </div>
 
-        <button type="submit" class="btn-save" id="btn-save">Guardar usuario</button>
-        <button type="button" class="btn-cancel" id="btn-cancel">Cancelar</button>
+  <!-- MODAL: Registrar Obra -->
+  <div class="overlay" id="overlay-obra">
+    <div class="modal">
+      <button class="modal-close" id="modal-obra-close">✕</button>
+      <h2 class="modal-title">Registrar nueva obra</h2>
+      <div class="error-msg" id="error-obra"></div>
+
+      <div class="form-group">
+        <label class="form-label">CUI (Código Único de Inversión)</label>
+        <div style="display:flex;gap:8px;">
+          <input type="text" id="inp-cui-obra" class="form-input" placeholder="ej: 2591893" maxlength="7" pattern="\d{7}" style="flex:1"/>
+          <button type="button" class="btn-buscar-ssi" id="btn-buscar-ssi" style="width:auto;margin-top:0;white-space:nowrap;padding:10px 14px;">Buscar en SSI</button>
+        </div>
+        <p style="font-size:11px;color:var(--muted);margin-top:4px;">El sistema buscará el CUI en el portal MEF/SSI</p>
+      </div>
+
+      <!-- Preview SSI -->
+      <div class="ssi-preview" id="ssi-preview">
+        <div class="ssi-nombre" id="ssi-nombre"></div>
+        <p><strong>Entidad:</strong> <span id="ssi-entidad"></span></p>
+        <p><strong>Costo actualizado:</strong> S/ <span id="ssi-monto"></span></p>
+        <p><strong>Modalidad:</strong> <span id="ssi-modalidad"></span></p>
+      </div>
+
+      <form id="form-obra">
+        <div class="form-group">
+          <label class="form-label">Municipalidad</label>
+          <input type="text" id="inp-municipalidad" class="form-input" placeholder="ej: Tacna"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Distrito</label>
+          <input type="text" id="inp-distrito" class="form-input" placeholder="ej: Tacna (opcional, si difiere de municipalidad)"/>
+        </div>
+        <button type="submit" class="btn-save" id="btn-save-obra">Registrar obra</button>
+        <button type="button" class="btn-cancel" id="btn-cancel-obra">Cancelar</button>
       </form>
     </div>
   </div>
@@ -349,15 +423,10 @@
   <script>
     const API = 'https://api.expedientecheck.com';
 
-    let token = localStorage.getItem('expediente_token');
-    let userMeta = JSON.parse(localStorage.getItem('expediente_user') || '{}');
-    let usuarioActual = null;
-    let cuisAsignados = [];
+    const token    = localStorage.getItem('expediente_token');
+    const userMeta = JSON.parse(localStorage.getItem('expediente_user') || '{}');
 
-    // Verificar autenticación y rol
-    if (!token) {
-      window.location.href = 'login.html';
-    }
+    if (!token) { window.location.href = 'login.html'; }
     if (userMeta.rol !== 'admin') {
       alert('Solo administradores pueden acceder aquí');
       window.location.href = 'index.html';
@@ -366,247 +435,335 @@
     document.getElementById('user-email').textContent = userMeta.email;
     document.getElementById('btn-logout').addEventListener('click', () => {
       localStorage.removeItem('expediente_token');
+      localStorage.removeItem('expediente_refresh_token');
       localStorage.removeItem('expediente_user');
       window.location.href = 'login.html';
     });
 
-    // Cargar usuarios
+    // ── TABS ──────────────────────────────────────────────────
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById('panel-' + btn.dataset.tab).classList.add('active');
+        if (btn.dataset.tab === 'obras') cargarObras();
+      });
+    });
+
+    // ── HELPERS ───────────────────────────────────────────────
+    const esc = s => String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    const fmtMonto = n => Number(n || 0).toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+    function authHeaders() {
+      return { 'Authorization': `Bearer ${localStorage.getItem('expediente_token')}` };
+    }
+
+    // ── USUARIOS ──────────────────────────────────────────────
+    let usuarioActual = null;
+    let cuisAsignados = [];
+
     async function cargarUsuarios() {
       try {
-        const res = await fetch(`${API}/api/admin/users`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
+        const res  = await fetch(`${API}/api/admin/users`, { headers: authHeaders() });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error);
 
-        const tbody = document.getElementById('tbody');
+        const tbody = document.getElementById('tbody-usuarios');
         if (!data.users || data.users.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="5"><div class="empty-state"><p>Sin usuarios registrados</p></div></td></tr>';
+          tbody.innerHTML = '<tr><td colspan="5"><div class="empty-state">Sin usuarios registrados</div></td></tr>';
           return;
         }
 
-        // Escapar HTML para prevenir XSS
-        const esc = s => String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-
-        tbody.innerHTML = data.users.map(u => `
-          <tr>
-            <td><div class="user-name">${esc(u.full_name) || 'Sin nombre'}</div></td>
-            <td><div class="user-email">${esc(u.email)}</div></td>
+        tbody.innerHTML = '';
+        data.users.forEach(u => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${esc(u.full_name) || 'Sin nombre'}</td>
+            <td><span class="user-email">${esc(u.email)}</span></td>
             <td><span class="user-rol ${esc(u.rol)}">${esc(u.rol)}</span></td>
             <td style="font-family:var(--mono);font-size:11px;color:var(--muted);">
               ${u.cuis_asignados && u.cuis_asignados.length > 0 ? u.cuis_asignados.map(esc).join(', ') : '-'}
             </td>
             <td>
-              <button class="btn-editar" data-id="${esc(u.id)}" data-email="${esc(u.email)}">Editar</button>
-              <button class="btn-eliminar" data-id="${esc(u.id)}">Eliminar</button>
-            </td>
-          </tr>
-        `).join('');
+              <button class="btn-accion editar" data-id="${esc(u.id)}" data-email="${esc(u.email)}">Editar</button>
+              <button class="btn-accion eliminar" data-id="${esc(u.id)}">Eliminar</button>
+            </td>`;
+          tbody.appendChild(tr);
+        });
 
-        // Event listeners para botones
-        document.querySelectorAll('.btn-editar').forEach(btn => {
-          btn.addEventListener('click', () => abrirModalEditar(btn.dataset.id, btn.dataset.email));
-        });
-        document.querySelectorAll('.btn-eliminar').forEach(btn => {
+        document.querySelectorAll('#tbody-usuarios .editar').forEach(btn =>
+          btn.addEventListener('click', () => abrirModalEditarUsuario(btn.dataset.id, btn.dataset.email)));
+        document.querySelectorAll('#tbody-usuarios .eliminar').forEach(btn =>
           btn.addEventListener('click', () => {
-            if (confirm('¿Estás seguro que quieres eliminar este usuario?')) {
-              eliminarUsuario(btn.dataset.id);
-            }
-          });
-        });
+            if (confirm('¿Eliminar este usuario?')) eliminarUsuario(btn.dataset.id);
+          }));
       } catch(err) {
-        document.getElementById('tbody').innerHTML = `<tr><td colspan="5"><div class="empty-state"><p>Error: ${err.message}</p></div></td></tr>`;
+        document.getElementById('tbody-usuarios').innerHTML =
+          `<tr><td colspan="5"><div class="empty-state">Error: ${esc(err.message)}</div></td></tr>`;
       }
     }
 
-    // Modal
-    const overlay = document.getElementById('overlay');
-    const form = document.getElementById('form-user');
-    const modalTitle = document.getElementById('modal-title');
-    const passwordGroup = document.getElementById('password-group');
-    const inpEmail = document.getElementById('inp-email');
-    const inpPassword = document.getElementById('inp-password');
-    const inpName = document.getElementById('inp-name');
-    const inpRol = document.getElementById('inp-rol');
-    const inpCui = document.getElementById('inp-cui');
-    const cuisContainer = document.getElementById('cuis-container');
-    const errorMsg = document.getElementById('error-msg');
+    // Modal usuario
+    const overlayUser    = document.getElementById('overlay-usuario');
+    const formUser       = document.getElementById('form-user');
+    const inpEmail       = document.getElementById('inp-email');
+    const inpPassword    = document.getElementById('inp-password');
+    const inpName        = document.getElementById('inp-name');
+    const inpRol         = document.getElementById('inp-rol');
+    const passwordGroup  = document.getElementById('password-group');
+    const errorUser      = document.getElementById('error-user');
 
-    // Abrir modal (crear)
     document.getElementById('btn-new-user').addEventListener('click', () => {
-      usuarioActual = null;
-      cuisAsignados = [];
-      modalTitle.textContent = 'Crear usuario';
+      usuarioActual = null; cuisAsignados = [];
+      document.getElementById('modal-user-title').textContent = 'Crear usuario';
       passwordGroup.style.display = 'block';
-      inpEmail.value = '';
-      inpPassword.value = '';
-      inpName.value = '';
-      inpRol.value = 'especialista';
+      inpEmail.value = ''; inpPassword.value = ''; inpName.value = '';
+      inpRol.value = 'especialista'; inpEmail.disabled = false;
       renderCuisContainer();
-      errorMsg.classList.remove('show');
-      overlay.classList.add('open');
+      errorUser.classList.remove('show');
+      overlayUser.classList.add('open');
     });
 
-    // Abrir modal (editar)
-    async function abrirModalEditar(userId, email) {
+    async function abrirModalEditarUsuario(userId, email) {
       usuarioActual = userId;
-      modalTitle.textContent = 'Editar usuario';
+      document.getElementById('modal-user-title').textContent = 'Editar usuario';
       passwordGroup.style.display = 'none';
-      inpEmail.value = email;
-      inpEmail.disabled = true;
-      inpPassword.value = '';
+      inpEmail.value = email; inpEmail.disabled = true;
 
-      // Obtener datos del usuario
-      const users = await fetch(`${API}/api/admin/users`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      }).then(r => r.json()).then(d => d.users);
+      const users = await fetch(`${API}/api/admin/users`, { headers: authHeaders() })
+        .then(r => r.json()).then(d => d.users);
       const user = users.find(u => u.id === userId);
       if (user) {
         inpName.value = user.full_name || '';
-        inpRol.value = user.rol;
+        inpRol.value  = user.rol;
         cuisAsignados = user.cuis_asignados || [];
       }
       renderCuisContainer();
-      errorMsg.classList.remove('show');
-      overlay.classList.add('open');
+      errorUser.classList.remove('show');
+      overlayUser.classList.add('open');
     }
 
-    // Cerrar modal
-    document.getElementById('modal-close').addEventListener('click', cerrarModal);
-    document.getElementById('btn-cancel').addEventListener('click', cerrarModal);
-    overlay.addEventListener('click', e => {
-      if (e.target === overlay) cerrarModal();
-    });
-
-    function cerrarModal() {
-      overlay.classList.remove('open');
-      usuarioActual = null;
-      inpEmail.disabled = false;
+    function cerrarModalUsuario() {
+      overlayUser.classList.remove('open');
+      usuarioActual = null; inpEmail.disabled = false;
     }
+    document.getElementById('modal-user-close').addEventListener('click', cerrarModalUsuario);
+    document.getElementById('btn-cancel-user').addEventListener('click', cerrarModalUsuario);
+    overlayUser.addEventListener('click', e => { if (e.target === overlayUser) cerrarModalUsuario(); });
 
-    // Gestión de CUIs
-    inpCui.addEventListener('keypress', (e) => {
-      if (e.key !== 'Enter') return;
-      e.preventDefault();
-      const cui = inpCui.value.trim();
-      if (!cui || !/^\d{7}$/.test(cui)) {
-        showError('CUI debe ser 7 dígitos');
-        return;
-      }
-      if (cuisAsignados.includes(cui)) {
-        showError('CUI ya está asignado');
-        return;
-      }
-      cuisAsignados.push(cui);
-      inpCui.value = '';
-      renderCuisContainer();
-      errorMsg.classList.remove('show');
-    });
-
+    // CUIs tag input
     function renderCuisContainer() {
-      const tagHtml = cuisAsignados.map(cui => `
-        <span class="tag">
-          ${cui}
-          <button type="button" data-cui="${cui}" class="btn-remove-cui">✕</button>
-        </span>
-      `).join('');
-      
-      const inputHtml = '<input id="inp-cui" type="text" placeholder="Ingresa CUI y presiona Enter" pattern="\\d{7}"/>';
-      
-      cuisContainer.innerHTML = tagHtml + inputHtml;
+      const container = document.getElementById('cuis-container');
+      container.innerHTML = '';
 
-      document.querySelectorAll('.btn-remove-cui').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-          e.preventDefault();
-          cuisAsignados = cuisAsignados.filter(c => c !== btn.dataset.cui);
+      cuisAsignados.forEach(cui => {
+        const span = document.createElement('span');
+        span.className = 'tag';
+        span.textContent = cui + ' ';
+        const btn = document.createElement('button');
+        btn.type = 'button'; btn.textContent = '✕';
+        btn.addEventListener('click', () => {
+          cuisAsignados = cuisAsignados.filter(c => c !== cui);
           renderCuisContainer();
         });
+        span.appendChild(btn);
+        container.appendChild(span);
       });
 
-      inpCui = document.getElementById('inp-cui');
-      inpCui.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-          e.preventDefault();
-          const cui = inpCui.value.trim();
-          if (!cui || !/^\d{7}$/.test(cui)) {
-            showError('CUI debe ser 7 dígitos');
-            return;
-          }
-          if (cuisAsignados.includes(cui)) {
-            showError('CUI ya está asignado');
-            return;
-          }
-          cuisAsignados.push(cui);
-          inpCui.value = '';
-          renderCuisContainer();
-          errorMsg.classList.remove('show');
-        }
+      const inp = document.createElement('input');
+      inp.id = 'inp-cui-user'; inp.type = 'text';
+      inp.placeholder = 'Ingresa CUI y presiona Enter'; inp.pattern = '\\d{7}';
+      inp.addEventListener('keypress', e => {
+        if (e.key !== 'Enter') return;
+        e.preventDefault();
+        const cui = inp.value.trim();
+        if (!/^\d{7}$/.test(cui)) { showErrorUser('CUI debe ser 7 dígitos'); return; }
+        if (cuisAsignados.includes(cui)) { showErrorUser('CUI ya asignado'); return; }
+        cuisAsignados.push(cui);
+        inp.value = '';
+        renderCuisContainer();
+        errorUser.classList.remove('show');
       });
+      container.appendChild(inp);
     }
 
-    // Guardar usuario
-    form.addEventListener('submit', async (e) => {
+    formUser.addEventListener('submit', async (e) => {
       e.preventDefault();
       const email = inpEmail.value.trim();
       const password = inpPassword.value;
-      const name = inpName.value.trim();
-      const rol = inpRol.value;
-
-      if (!email || (usuarioActual === null && !password)) {
-        showError('Faltan datos requeridos');
-        return;
-      }
+      if (!email || (usuarioActual === null && !password)) { showErrorUser('Faltan datos requeridos'); return; }
 
       try {
-        const payload = { full_name: name, rol, cuis_asignados: cuisAsignados };
+        const payload = { full_name: inpName.value.trim(), rol: inpRol.value, cuis_asignados: cuisAsignados };
         if (password) payload.password = password;
-
         const method = usuarioActual ? 'PUT' : 'POST';
-        const url = usuarioActual 
-          ? `${API}/api/admin/users/${usuarioActual}`
-          : API + '/api/admin/users';
-        
+        const url    = usuarioActual ? `${API}/api/admin/users/${usuarioActual}` : `${API}/api/admin/users`;
         if (!usuarioActual) payload.email = email;
 
-        const res = await fetch(url, {
-          method,
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify(payload)
-        });
+        const res  = await fetch(url, { method, headers: { ...authHeaders(), 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error);
 
+        cargarUsuarios(); cerrarModalUsuario();
+      } catch(err) { showErrorUser(err.message); }
+    });
+
+    async function eliminarUsuario(userId) {
+      try {
+        const res  = await fetch(`${API}/api/admin/users/${userId}`, { method: 'DELETE', headers: authHeaders() });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
         cargarUsuarios();
-        cerrarModal();
+      } catch(err) { alert('Error: ' + err.message); }
+    }
+
+    function showErrorUser(msg) { errorUser.textContent = msg; errorUser.classList.add('show'); }
+
+    // ── OBRAS ─────────────────────────────────────────────────
+    async function cargarObras() {
+      const tbody = document.getElementById('tbody-obras');
+      tbody.innerHTML = '<tr><td colspan="6" class="loading">Cargando...</td></tr>';
+      try {
+        const res  = await fetch(`${API}/api/admin/obras`, { headers: authHeaders() });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+
+        if (!data.obras || data.obras.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state">Sin obras registradas. Registra el primer CUI.</div></td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = '';
+        data.obras.forEach(o => {
+          const alertaClass = o.alerta === 'rojo' ? 'rojo' : o.alerta === 'amarillo' ? 'amarillo' : 'verde';
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td><span class="cui-badge">${esc(o.cui)}</span></td>
+            <td>
+              <div class="obra-nombre" title="${esc(o.nombre_obra)}">${esc(o.nombre_obra)}</div>
+              <div class="obra-municipalidad">${esc(o.entidad_nombre || '')}</div>
+            </td>
+            <td style="font-size:13px;">${esc(o.municipalidad || o.distrito || '-')}</td>
+            <td style="font-family:var(--mono);font-size:12px;">S/ ${fmtMonto(o.monto)}</td>
+            <td><span class="alerta-badge alerta-${alertaClass}"></span>${alertaClass}</td>
+            <td>
+              <button class="btn-accion ver" data-cui="${esc(o.cui)}">Ver ficha</button>
+              <button class="btn-accion eliminar" data-cui="${esc(o.cui)}" data-nombre="${esc(o.nombre_obra)}">Eliminar</button>
+            </td>`;
+          tbody.appendChild(tr);
+        });
+
+        document.querySelectorAll('#tbody-obras .ver').forEach(btn =>
+          btn.addEventListener('click', () => window.open(`fichatecnicaCUI.html?cui=${btn.dataset.cui}`, '_blank')));
+        document.querySelectorAll('#tbody-obras .eliminar').forEach(btn =>
+          btn.addEventListener('click', () => {
+            if (confirm(`¿Eliminar la obra "${btn.dataset.nombre}"?\nEsta acción no se puede deshacer.`))
+              eliminarObra(btn.dataset.cui);
+          }));
       } catch(err) {
-        showError(err.message);
+        tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state">Error: ${esc(err.message)}</div></td></tr>`;
+      }
+    }
+
+    async function eliminarObra(cui) {
+      try {
+        const res  = await fetch(`${API}/api/admin/obras/${cui}`, { method: 'DELETE', headers: authHeaders() });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+        cargarObras();
+      } catch(err) { alert('Error: ' + err.message); }
+    }
+
+    // Modal obra
+    const overlayObra  = document.getElementById('overlay-obra');
+    const formObra     = document.getElementById('form-obra');
+    const inpCuiObra   = document.getElementById('inp-cui-obra');
+    const inpMuni      = document.getElementById('inp-municipalidad');
+    const inpDistrito  = document.getElementById('inp-distrito');
+    const errorObra    = document.getElementById('error-obra');
+    const ssiPreview   = document.getElementById('ssi-preview');
+
+    function cerrarModalObra() {
+      overlayObra.classList.remove('open');
+      inpCuiObra.value = ''; inpMuni.value = ''; inpDistrito.value = '';
+      ssiPreview.classList.remove('show'); errorObra.classList.remove('show');
+    }
+
+    document.getElementById('btn-new-obra').addEventListener('click', () => {
+      cerrarModalObra();
+      overlayObra.classList.add('open');
+    });
+    document.getElementById('modal-obra-close').addEventListener('click', cerrarModalObra);
+    document.getElementById('btn-cancel-obra').addEventListener('click', cerrarModalObra);
+    overlayObra.addEventListener('click', e => { if (e.target === overlayObra) cerrarModalObra(); });
+
+    // Buscar en SSI
+    document.getElementById('btn-buscar-ssi').addEventListener('click', async () => {
+      const cui = inpCuiObra.value.trim();
+      if (!/^\d{7}$/.test(cui)) { showErrorObra('Ingresa un CUI válido de 7 dígitos'); return; }
+      errorObra.classList.remove('show');
+      ssiPreview.classList.remove('show');
+
+      const btn = document.getElementById('btn-buscar-ssi');
+      btn.textContent = 'Buscando...'; btn.disabled = true;
+      try {
+        const res  = await fetch(`${API}/api/ssi/${cui}`, { headers: authHeaders() });
+        const data = await res.json();
+
+        if (!res.ok || !data) {
+          ssiPreview.classList.remove('show');
+          showErrorObra(`CUI ${cui} no encontrado en SSI. Puedes registrarlo igualmente ingresando los datos manualmente.`);
+        } else {
+          document.getElementById('ssi-nombre').textContent   = data.nombre_inversion || data.denominacion || `CUI ${cui}`;
+          document.getElementById('ssi-entidad').textContent  = data.entidad || '-';
+          document.getElementById('ssi-monto').textContent    = fmtMonto(data.costo_actualizado);
+          document.getElementById('ssi-modalidad').textContent= data.modalidad_ejecucion || '-';
+          ssiPreview.classList.add('show');
+          errorObra.classList.remove('show');
+        }
+      } catch(err) {
+        showErrorObra('Error al consultar SSI: ' + err.message);
+      } finally {
+        btn.textContent = 'Buscar en SSI'; btn.disabled = false;
       }
     });
 
-    // Eliminar usuario
-    async function eliminarUsuario(userId) {
+    formObra.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const cui = inpCuiObra.value.trim();
+      const municipalidad = inpMuni.value.trim();
+      if (!/^\d{7}$/.test(cui)) { showErrorObra('CUI inválido'); return; }
+      if (!municipalidad) { showErrorObra('Municipalidad requerida'); return; }
+
+      const btnSave = document.getElementById('btn-save-obra');
+      btnSave.disabled = true; btnSave.textContent = 'Registrando...';
       try {
-        const res = await fetch(`${API}/api/admin/users/${userId}`, {
-          method: 'DELETE',
-          headers: { 'Authorization': `Bearer ${token}` }
+        const res  = await fetch(`${API}/api/admin/obras`, {
+          method: 'POST',
+          headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+          body: JSON.stringify({ cui, municipalidad, distrito: inpDistrito.value.trim() || municipalidad })
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error);
-        cargarUsuarios();
+
+        cerrarModalObra();
+        // Cambiar a tab de obras y recargar
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+        document.querySelector('[data-tab="obras"]').classList.add('active');
+        document.getElementById('panel-obras').classList.add('active');
+        cargarObras();
       } catch(err) {
-        alert('Error: ' + err.message);
+        showErrorObra(err.message);
+      } finally {
+        btnSave.disabled = false; btnSave.textContent = 'Registrar obra';
       }
-    }
+    });
 
-    function showError(msg) {
-      errorMsg.textContent = msg;
-      errorMsg.classList.add('show');
-    }
+    function showErrorObra(msg) { errorObra.textContent = msg; errorObra.classList.add('show'); }
 
-    // Inicializar
+    // ── INIT ──────────────────────────────────────────────────
     cargarUsuarios();
     renderCuisContainer();
   </script>
