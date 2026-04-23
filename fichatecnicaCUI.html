@@ -496,7 +496,14 @@ async function authedFetch(url, options = {}) {
     const refreshToken = localStorage.getItem('expediente_refresh_token');
     const cuiActualParam = new URLSearchParams(location.search).get('cui');
     const loginUrl = 'login.html' + (cuiActualParam ? `?cui=${cuiActualParam}` : '');
-    if (!refreshToken) { window.location.href = loginUrl; return res; }
+
+    const limpiarYRedirigir = () => {
+      localStorage.removeItem('expediente_token');
+      localStorage.removeItem('expediente_refresh_token');
+      window.location.href = loginUrl;
+    };
+
+    if (!refreshToken) { limpiarYRedirigir(); return res; }
 
     const refreshRes = await fetch(`${API}/api/auth/refresh`, {
       method: 'POST',
@@ -504,7 +511,7 @@ async function authedFetch(url, options = {}) {
       body: JSON.stringify({ refresh_token: refreshToken }),
     });
 
-    if (!refreshRes.ok) { window.location.href = loginUrl; return res; }
+    if (!refreshRes.ok) { limpiarYRedirigir(); return res; }
 
     const { access_token, refresh_token: newRefresh } = await refreshRes.json();
     localStorage.setItem('expediente_token', access_token);
