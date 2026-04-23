@@ -271,6 +271,7 @@
   <header>
     <div class="logo">ExpedienteCheck</div>
     <div class="header-right">
+      <span id="user-municipalidad" style="font-size:11px;color:#6b7280;"></span>
       <span id="user-email"></span>
       <button class="btn-logout" id="btn-logout">Cerrar sesión</button>
     </div>
@@ -365,8 +366,14 @@
             <option value="especialista">Especialista</option>
             <option value="residente">Residente</option>
             <option value="supervisor">Supervisor</option>
-            <option value="admin">Administrador</option>
+            <option value="municipal_admin" class="only-superadmin" style="display:none;">Admin Municipal</option>
+            <option value="admin" class="only-superadmin" style="display:none;">Super Administrador</option>
           </select>
+        </div>
+        <div class="form-group only-superadmin" id="muni-group-user" style="display:none;">
+          <label class="form-label">Municipalidad</label>
+          <input type="text" id="inp-municipalidad-user" class="form-input" placeholder="ej: Tacna"/>
+          <p style="font-size:11px;color:var(--muted);margin-top:4px;">Asigna la municipalidad del usuario</p>
         </div>
         <div class="form-group">
           <label class="form-label">CUIs asignados</label>
@@ -427,12 +434,24 @@
     const userMeta = JSON.parse(localStorage.getItem('expediente_user') || '{}');
 
     if (!token) { window.location.href = 'login.html'; }
-    if (userMeta.rol !== 'admin') {
+    if (userMeta.rol !== 'admin' && userMeta.rol !== 'municipal_admin') {
       alert('Solo administradores pueden acceder aquí');
       window.location.href = 'index.html';
     }
 
+    const esSuperAdmin = userMeta.rol === 'admin';
+
     document.getElementById('user-email').textContent = userMeta.email;
+
+    // Mostrar municipalidad en header si es admin municipal
+    if (!esSuperAdmin && userMeta.municipalidad) {
+      document.getElementById('user-municipalidad').textContent = userMeta.municipalidad + ' ·';
+    }
+
+    // Mostrar elementos exclusivos de super-admin
+    if (esSuperAdmin) {
+      document.querySelectorAll('.only-superadmin').forEach(el => el.style.display = '');
+    }
     document.getElementById('btn-logout').addEventListener('click', () => {
       localStorage.removeItem('expediente_token');
       localStorage.removeItem('expediente_refresh_token');
@@ -538,6 +557,9 @@
         inpName.value = user.full_name || '';
         inpRol.value  = user.rol;
         cuisAsignados = user.cuis_asignados || [];
+        if (esSuperAdmin) {
+          document.getElementById('inp-municipalidad-user').value = user.municipalidad || '';
+        }
       }
       renderCuisContainer();
       errorUser.classList.remove('show');
@@ -594,8 +616,13 @@
       const password = inpPassword.value;
       if (!email || (usuarioActual === null && !password)) { showErrorUser('Faltan datos requeridos'); return; }
 
+      // municipalidad: super-admin usa el campo; municipal_admin usa la suya
+      const municipalidad = esSuperAdmin
+        ? (document.getElementById('inp-municipalidad-user').value.trim())
+        : (userMeta.municipalidad || '');
+
       try {
-        const payload = { full_name: inpName.value.trim(), rol: inpRol.value, cuis_asignados: cuisAsignados };
+        const payload = { full_name: inpName.value.trim(), rol: inpRol.value, cuis_asignados: cuisAsignados, municipalidad };
         if (password) payload.password = password;
         const method = usuarioActual ? 'PUT' : 'POST';
         const url    = usuarioActual ? `${API}/api/admin/users/${usuarioActual}` : `${API}/api/admin/users`;
@@ -687,11 +714,19 @@
     function cerrarModalObra() {
       overlayObra.classList.remove('open');
       inpCuiObra.value = ''; inpMuni.value = ''; inpDistrito.value = '';
+      inpMuni.disabled = false;
       ssiPreview.classList.remove('show'); errorObra.classList.remove('show');
     }
 
     document.getElementById('btn-new-obra').addEventListener('click', () => {
       cerrarModalObra();
+      // municipal_admin: precargar y bloquear municipalidad
+      if (!esSuperAdmin) {
+        inpMuni.value    = userMeta.municipalidad || '';
+        inpMuni.disabled = true;
+      } else {
+        inpMuni.disabled = false;
+      }
       overlayObra.classList.add('open');
     });
     document.getElementById('modal-obra-close').addEventListener('click', cerrarModalObra);
