@@ -494,7 +494,9 @@ async function authedFetch(url, options = {}) {
   if (res.status === 401) {
     // Intentar renovar el token
     const refreshToken = localStorage.getItem('expediente_refresh_token');
-    if (!refreshToken) { window.location.href = 'login.html'; return res; }
+    const cuiActualParam = new URLSearchParams(location.search).get('cui');
+    const loginUrl = 'login.html' + (cuiActualParam ? `?cui=${cuiActualParam}` : '');
+    if (!refreshToken) { window.location.href = loginUrl; return res; }
 
     const refreshRes = await fetch(`${API}/api/auth/refresh`, {
       method: 'POST',
@@ -502,7 +504,7 @@ async function authedFetch(url, options = {}) {
       body: JSON.stringify({ refresh_token: refreshToken }),
     });
 
-    if (!refreshRes.ok) { window.location.href = 'login.html'; return res; }
+    if (!refreshRes.ok) { window.location.href = loginUrl; return res; }
 
     const { access_token, refresh_token: newRefresh } = await refreshRes.json();
     localStorage.setItem('expediente_token', access_token);
