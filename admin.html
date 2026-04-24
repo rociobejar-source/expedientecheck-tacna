@@ -410,6 +410,12 @@
         <p><strong>Entidad:</strong> <span id="ssi-entidad"></span></p>
         <p><strong>Costo actualizado:</strong> S/ <span id="ssi-monto"></span></p>
         <p><strong>Modalidad:</strong> <span id="ssi-modalidad"></span></p>
+        <p><strong>PIM 2026:</strong> S/ <span id="ssi-pim"></span></p>
+      </div>
+      <!-- Aviso sin PIM -->
+      <div id="aviso-sin-pim" style="display:none;background:#fff8e1;border:1px solid #ffe082;border-radius:8px;padding:12px 14px;margin-bottom:16px;font-size:13px;color:#7a5800;">
+        ⚠️ Esta inversión <strong>no tiene PIM asignado para el año vigente</strong>.<br>
+        Puedes registrarla igualmente, pero <strong>no aparecerá en el monitor</strong> hasta que el MEF le asigne presupuesto.
       </div>
 
       <form id="form-obra">
@@ -715,7 +721,9 @@
       overlayObra.classList.remove('open');
       inpCuiObra.value = ''; inpMuni.value = ''; inpDistrito.value = '';
       inpMuni.disabled = false;
-      ssiPreview.classList.remove('show'); errorObra.classList.remove('show');
+      ssiPreview.classList.remove('show');
+      document.getElementById('aviso-sin-pim').style.display = 'none';
+      errorObra.classList.remove('show');
     }
 
     document.getElementById('btn-new-obra').addEventListener('click', () => {
@@ -748,14 +756,20 @@
 
         if (!res.ok || !data) {
           ssiPreview.classList.remove('show');
+          document.getElementById('aviso-sin-pim').style.display = 'none';
           showErrorObra(`CUI ${cui} no encontrado en SSI. Puedes registrarlo igualmente ingresando los datos manualmente.`);
         } else {
-          document.getElementById('ssi-nombre').textContent   = data.nombre_inversion || data.denominacion || `CUI ${cui}`;
-          document.getElementById('ssi-entidad').textContent  = data.entidad || '-';
-          document.getElementById('ssi-monto').textContent    = fmtMonto(data.costo_actualizado);
-          document.getElementById('ssi-modalidad').textContent= data.modalidad_ejecucion || '-';
+          document.getElementById('ssi-nombre').textContent    = data.nombre_inversion || data.denominacion || `CUI ${cui}`;
+          document.getElementById('ssi-entidad').textContent   = data.entidad || '-';
+          document.getElementById('ssi-monto').textContent     = fmtMonto(data.costo_actualizado);
+          document.getElementById('ssi-modalidad').textContent = data.modalidad_ejecucion || '-';
+          document.getElementById('ssi-pim').textContent       = fmtMonto(data.pim_ano_vigente);
           ssiPreview.classList.add('show');
           errorObra.classList.remove('show');
+
+          // Aviso si no tiene PIM del año vigente
+          const sinPIM = !data.pim_ano_vigente || Number(data.pim_ano_vigente) === 0;
+          document.getElementById('aviso-sin-pim').style.display = sinPIM ? 'block' : 'none';
         }
       } catch(err) {
         showErrorObra('Error al consultar SSI: ' + err.message);
@@ -789,6 +803,15 @@
         document.querySelector('[data-tab="obras"]').classList.add('active');
         document.getElementById('panel-obras').classList.add('active');
         cargarObras();
+
+        if (data.warning) {
+          // Mostrar aviso amarillo en la tabla de obras
+          const aviso = document.createElement('div');
+          aviso.style.cssText = 'background:#fff8e1;border:1px solid #ffe082;border-radius:8px;padding:12px 16px;margin-bottom:16px;font-size:13px;color:#7a5800;';
+          aviso.innerHTML = `⚠️ Obra registrada. ${data.warning}`;
+          document.getElementById('panel-obras').insertBefore(aviso, document.querySelector('#panel-obras .table-wrap'));
+          setTimeout(() => aviso.remove(), 12000);
+        }
       } catch(err) {
         showErrorObra(err.message);
       } finally {
