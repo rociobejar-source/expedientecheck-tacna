@@ -372,8 +372,9 @@
         </div>
         <div class="form-group only-superadmin" id="muni-group-user" style="display:none;">
           <label class="form-label">Municipalidad</label>
-          <input type="text" id="inp-municipalidad-user" class="form-input" placeholder="ej: Tacna"/>
-          <p style="font-size:11px;color:var(--muted);margin-top:4px;">Asigna la municipalidad del usuario</p>
+          <select id="inp-municipalidad-user" class="form-select">
+            <option value="">— Sin municipalidad —</option>
+          </select>
         </div>
         <div class="form-group">
           <label class="form-label">CUIs asignados</label>
@@ -457,6 +458,16 @@
     // Mostrar elementos exclusivos de super-admin
     if (esSuperAdmin) {
       document.querySelectorAll('.only-superadmin').forEach(el => el.style.display = '');
+      // Cargar dropdown de municipalidades
+      fetch(`${API}/api/admin/municipalidades`, { headers: authHeaders() })
+        .then(r => r.json()).then(data => {
+          const sel = document.getElementById('inp-municipalidad-user');
+          (data.municipalidades || []).forEach(m => {
+            const opt = document.createElement('option');
+            opt.value = m.id; opt.textContent = m.nombre;
+            sel.appendChild(opt);
+          });
+        });
     }
     document.getElementById('btn-logout').addEventListener('click', () => {
       localStorage.removeItem('expediente_token');
@@ -506,7 +517,10 @@
           tr.innerHTML = `
             <td>${esc(u.full_name) || 'Sin nombre'}</td>
             <td><span class="user-email">${esc(u.email)}</span></td>
-            <td><span class="user-rol ${esc(u.rol)}">${esc(u.rol)}</span></td>
+            <td>
+              <span class="user-rol ${esc(u.rol)}">${esc(u.rol)}</span>
+              ${u.municipalidad ? `<div style="font-size:11px;color:var(--muted);margin-top:3px;">${esc(u.municipalidad)}</div>` : ''}
+            </td>
             <td style="font-family:var(--mono);font-size:11px;color:var(--muted);">
               ${u.cuis_asignados && u.cuis_asignados.length > 0 ? u.cuis_asignados.map(esc).join(', ') : '-'}
             </td>
@@ -564,7 +578,7 @@
         inpRol.value  = user.rol;
         cuisAsignados = user.cuis_asignados || [];
         if (esSuperAdmin) {
-          document.getElementById('inp-municipalidad-user').value = user.municipalidad || '';
+          document.getElementById('inp-municipalidad-user').value = user.municipalidad_id || '';
         }
       }
       renderCuisContainer();
@@ -622,13 +636,13 @@
       const password = inpPassword.value;
       if (!email || (usuarioActual === null && !password)) { showErrorUser('Faltan datos requeridos'); return; }
 
-      // municipalidad: super-admin usa el campo; municipal_admin usa la suya
-      const municipalidad = esSuperAdmin
-        ? (document.getElementById('inp-municipalidad-user').value.trim())
-        : (userMeta.municipalidad || '');
+      // municipalidad_id: super-admin usa el dropdown; municipal_admin usa la suya
+      const municipalidadId = esSuperAdmin
+        ? (document.getElementById('inp-municipalidad-user').value || null)
+        : (userMeta.municipalidad_id || null);
 
       try {
-        const payload = { full_name: inpName.value.trim(), rol: inpRol.value, cuis_asignados: cuisAsignados, municipalidad };
+        const payload = { full_name: inpName.value.trim(), rol: inpRol.value, cuis_asignados: cuisAsignados, municipalidad_id: municipalidadId };
         if (password) payload.password = password;
         const method = usuarioActual ? 'PUT' : 'POST';
         const url    = usuarioActual ? `${API}/api/admin/users/${usuarioActual}` : `${API}/api/admin/users`;
