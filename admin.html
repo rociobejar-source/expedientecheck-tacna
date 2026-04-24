@@ -299,13 +299,12 @@
             <tr>
               <th>Usuario</th>
               <th>Email</th>
-              <th>Rol</th>
-              <th>CUIs asignados</th>
+              <th>Rol / Municipalidad</th>
               <th>Acciones</th>
             </tr>
           </thead>
           <tbody id="tbody-usuarios">
-            <tr><td colspan="5" class="loading">Cargando...</td></tr>
+            <tr><td colspan="4" class="loading">Cargando...</td></tr>
           </tbody>
         </table>
       </div>
@@ -376,12 +375,11 @@
             <option value="">— Sin municipalidad —</option>
           </select>
         </div>
-        <div class="form-group">
+        <div class="form-group" style="display:none;">
           <label class="form-label">CUIs asignados</label>
           <div class="form-input-tags" id="cuis-container">
             <input id="inp-cui-user" type="text" placeholder="Ingresa CUI y presiona Enter" pattern="\d{7}"/>
           </div>
-          <p style="font-size:11px;color:var(--muted);margin-top:4px;">CUIs de 7 dígitos (ej: 2677250)</p>
         </div>
         <button type="submit" class="btn-save" id="btn-save-user">Guardar usuario</button>
         <button type="button" class="btn-cancel" id="btn-cancel-user">Cancelar</button>
@@ -507,7 +505,7 @@
 
         const tbody = document.getElementById('tbody-usuarios');
         if (!data.users || data.users.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="5"><div class="empty-state">Sin usuarios registrados</div></td></tr>';
+          tbody.innerHTML = '<tr><td colspan="4"><div class="empty-state">Sin usuarios registrados</div></td></tr>';
           return;
         }
 
@@ -520,9 +518,6 @@
             <td>
               <span class="user-rol ${esc(u.rol)}">${esc(u.rol)}</span>
               ${u.municipalidad ? `<div style="font-size:11px;color:var(--muted);margin-top:3px;">${esc(u.municipalidad)}</div>` : ''}
-            </td>
-            <td style="font-family:var(--mono);font-size:11px;color:var(--muted);">
-              ${u.cuis_asignados && u.cuis_asignados.length > 0 ? u.cuis_asignados.map(esc).join(', ') : '-'}
             </td>
             <td>
               <button class="btn-accion editar" data-id="${esc(u.id)}" data-email="${esc(u.email)}">Editar</button>
@@ -539,7 +534,7 @@
           }));
       } catch(err) {
         document.getElementById('tbody-usuarios').innerHTML =
-          `<tr><td colspan="5"><div class="empty-state">Error: ${esc(err.message)}</div></td></tr>`;
+          `<tr><td colspan="4"><div class="empty-state">Error: ${esc(err.message)}</div></td></tr>`;
       }
     }
 
