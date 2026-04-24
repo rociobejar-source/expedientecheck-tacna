@@ -686,7 +686,7 @@
               <div class="obra-nombre" title="${esc(o.nombre_obra)}">${esc(o.nombre_obra)}</div>
               <div class="obra-municipalidad">${esc(o.entidad_nombre || '')}</div>
             </td>
-            <td style="font-size:13px;">${esc(o.municipalidad || o.distrito || '-')}</td>
+            <td style="font-size:13px;">${esc(o.municipalidad_display || o.distrito || '-')}</td>
             <td style="font-family:var(--mono);font-size:12px;">S/ ${fmtMonto(o.monto)}</td>
             <td><span class="alerta-badge alerta-${alertaClass}"></span>${alertaClass}</td>
             <td>
