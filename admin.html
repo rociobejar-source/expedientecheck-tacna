@@ -457,7 +457,7 @@
     if (esSuperAdmin) {
       document.querySelectorAll('.only-superadmin').forEach(el => el.style.display = '');
       // Cargar dropdown de municipalidades
-      fetch(`${API}/api/admin/municipalidades`, { headers: authHeaders() })
+      authedFetch(`${API}/api/admin/municipalidades`)
         .then(r => r.json()).then(data => {
           const sel = document.getElementById('inp-municipalidad-user');
           (data.municipalidades || []).forEach(m => {
@@ -493,13 +493,40 @@
       return { 'Authorization': `Bearer ${localStorage.getItem('expediente_token')}` };
     }
 
+    async function authedFetch(url, options = {}) {
+      const token = localStorage.getItem('expediente_token');
+      const headers = { ...(options.headers || {}), 'Authorization': `Bearer ${token}` };
+      let res = await fetch(url, { ...options, headers });
+      if (res.status === 401) {
+        const refreshToken = localStorage.getItem('expediente_refresh_token');
+        const limpiarYRedirigir = () => {
+          localStorage.removeItem('expediente_token');
+          localStorage.removeItem('expediente_refresh_token');
+          window.location.href = 'login.html';
+        };
+        if (!refreshToken) { limpiarYRedirigir(); return res; }
+        const refreshRes = await fetch(`${API}/api/auth/refresh`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ refresh_token: refreshToken }),
+        });
+        if (!refreshRes.ok) { limpiarYRedirigir(); return res; }
+        const { access_token, refresh_token: newRefresh } = await refreshRes.json();
+        localStorage.setItem('expediente_token', access_token);
+        localStorage.setItem('expediente_refresh_token', newRefresh);
+        const retryHeaders = { ...(options.headers || {}), 'Authorization': `Bearer ${access_token}` };
+        res = await fetch(url, { ...options, headers: retryHeaders });
+      }
+      return res;
+    }
+
     // ── USUARIOS ──────────────────────────────────────────────
     let usuarioActual = null;
     let cuisAsignados = [];
 
     async function cargarUsuarios() {
       try {
-        const res  = await fetch(`${API}/api/admin/users`, { headers: authHeaders() });
+        const res  = await authedFetch(`${API}/api/admin/users`);
         const data = await res.json();
         if (!res.ok) throw new Error(data.error);
 
@@ -565,7 +592,7 @@
       passwordGroup.style.display = 'none';
       inpEmail.value = email; inpEmail.disabled = true;
 
-      const users = await fetch(`${API}/api/admin/users`, { headers: authHeaders() })
+      const users = await authedFetch(`${API}/api/admin/users`)
         .then(r => r.json()).then(d => d.users);
       const user = users.find(u => u.id === userId);
       if (user) {
@@ -643,7 +670,7 @@
         const url    = usuarioActual ? `${API}/api/admin/users/${usuarioActual}` : `${API}/api/admin/users`;
         if (!usuarioActual) payload.email = email;
 
-        const res  = await fetch(url, { method, headers: { ...authHeaders(), 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+        const res  = await authedFetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error);
 
@@ -653,7 +680,7 @@
 
     async function eliminarUsuario(userId) {
       try {
-        const res  = await fetch(`${API}/api/admin/users/${userId}`, { method: 'DELETE', headers: authHeaders() });
+        const res  = await authedFetch(`${API}/api/admin/users/${userId}`, { method: 'DELETE' });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error);
         cargarUsuarios();
@@ -667,7 +694,7 @@
       const tbody = document.getElementById('tbody-obras');
       tbody.innerHTML = '<tr><td colspan="6" class="loading">Cargando...</td></tr>';
       try {
-        const res  = await fetch(`${API}/api/admin/obras`, { headers: authHeaders() });
+        const res  = await authedFetch(`${API}/api/admin/obras`);
         const data = await res.json();
         if (!res.ok) throw new Error(data.error);
 
@@ -710,7 +737,7 @@
 
     async function eliminarObra(cui) {
       try {
-        const res  = await fetch(`${API}/api/admin/obras/${cui}`, { method: 'DELETE', headers: authHeaders() });
+        const res  = await authedFetch(`${API}/api/admin/obras/${cui}`, { method: 'DELETE' });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error);
         cargarObras();
@@ -760,7 +787,7 @@
       const btn = document.getElementById('btn-buscar-ssi');
       btn.textContent = 'Buscando...'; btn.disabled = true;
       try {
-        const res  = await fetch(`${API}/api/ssi/${cui}`, { headers: authHeaders() });
+        const res  = await authedFetch(`${API}/api/ssi/${cui}`);
         const data = await res.json();
 
         if (!res.ok || !data) {
@@ -797,9 +824,9 @@
       const btnSave = document.getElementById('btn-save-obra');
       btnSave.disabled = true; btnSave.textContent = 'Registrando...';
       try {
-        const res  = await fetch(`${API}/api/admin/obras`, {
+        const res  = await authedFetch(`${API}/api/admin/obras`, {
           method: 'POST',
-          headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ cui, municipalidad, distrito: inpDistrito.value.trim() || municipalidad })
         });
         const data = await res.json();
