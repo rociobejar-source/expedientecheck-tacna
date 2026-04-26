@@ -5,9 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>ExpedienteCheck · Ficha de Monitoreo</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-<!-- CurvaSChart widget (compilado con `npm run build:widget` en curva-s-app/) -->
+<!-- CurvaSChart widget CSS (compilado con `npm run build:widget` en curva-s-app/) -->
 <link rel="stylesheet" href="dist/curva-s/curva-s-widget.css">
-<script src="dist/curva-s/curva-s-widget.iife.js" defer></script>
 <script>
   // Protección de autenticación - ejecutar antes de cargar el contenido
   (function() {
@@ -633,16 +632,17 @@ function actualizar() {
 // ══════════════════════════════════════════
 // CURVA S — renderizado condicional
 // ══════════════════════════════════════════
+let _curvaSRetries = 0;
 function renderCurvaS() {
   const container = document.getElementById('curva-s-container');
   if (!container) return;
 
-  // Necesita el widget ya cargado
+  // El bundle puede tardar en descargarse (~953 kB): reintentar hasta 15 veces (~3 s)
   if (typeof window.CurvaSWidget === 'undefined') {
-    // Reintentar cuando el script diferido haya cargado
-    window.addEventListener('load', renderCurvaS, { once: true });
+    if (_curvaSRetries < 15) { _curvaSRetries++; setTimeout(renderCurvaS, 200); }
     return;
   }
+  _curvaSRetries = 0;
 
   // Condición: >= 2 periodos Y al menos uno con dato real (af != null)
   const hasDatos = meses.length >= 2 && meses.some(m => m.af != null);
@@ -1484,5 +1484,7 @@ window.addEventListener('load', () => {
   actualizar();
 });
 </script>
+<!-- CurvaSChart widget IIFE — cargado al final del body para evitar race conditions -->
+<script src="dist/curva-s/curva-s-widget.iife.js"></script>
 </body>
 </html>
