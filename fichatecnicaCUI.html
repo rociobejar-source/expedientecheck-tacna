@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>ExpedienteCheck · Ficha de Monitoreo</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<!-- CurvaSChart widget (compilado con `npm run build:widget` en curva-s-app/) -->
+<link rel="stylesheet" href="dist/curva-s/curva-s-widget.css">
+<script src="dist/curva-s/curva-s-widget.iife.js" defer></script>
 <script>
   // Protección de autenticación - ejecutar antes de cargar el contenido
   (function() {
@@ -33,6 +36,12 @@
   --border:#E3DED4; --border2:#CCC7B8;
   --text:#1A1A1A; --muted:#6B6560; --muted2:#9C9690;
   --sans:'DM Sans',sans-serif; --mono:'DM Mono',monospace;
+  /* ── Aliases para el design-system del widget CurvaSChart ── */
+  --success:          var(--green);
+  --muted-foreground: var(--muted);
+  --accent:           var(--gold);
+  --foreground:       var(--text);
+  --popover:          var(--surface);
 }
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--bg);font-family:var(--sans);font-size:13px;color:var(--text);min-height:100vh}
@@ -369,6 +378,9 @@ body{background:var(--bg);font-family:var(--sans);font-size:13px;color:var(--tex
       <span>Programación y avances mensuales</span>
       <button onclick="mostrarFormAvancesMensuales()" class="btn-save" style="padding:4px 10px;font-size:10px;margin:0" id="btn-add-mes-top">+ Agregar</button>
     </div>
+    <!-- Curva S: se renderiza si hay ≥ 2 periodos con al menos uno con dato real -->
+    <div id="curva-s-container" style="margin-bottom:14px"></div>
+
     <div id="prog-tabla-container" class="tbl-wrap" style="display:none">
       <table class="tbl" id="prog-tabla">
         <thead><tr><th>Período</th><th>Prog. base acum.</th><th>Prog. actual. acum.</th><th>Av. físico acum.</th><th>Certif. acum.</th><th>Brecha</th></tr></thead>
@@ -618,6 +630,49 @@ function actualizar() {
 // ══════════════════════════════════════════
 // TABLA MENSUAL
 // ══════════════════════════════════════════
+// ══════════════════════════════════════════
+// CURVA S — renderizado condicional
+// ══════════════════════════════════════════
+function renderCurvaS() {
+  const container = document.getElementById('curva-s-container');
+  if (!container) return;
+
+  // Necesita el widget ya cargado
+  if (typeof window.CurvaSWidget === 'undefined') {
+    // Reintentar cuando el script diferido haya cargado
+    window.addEventListener('load', renderCurvaS, { once: true });
+    return;
+  }
+
+  // Condición: >= 2 periodos Y al menos uno con dato real (af != null)
+  const hasDatos = meses.length >= 2 && meses.some(m => m.af != null);
+  if (!hasDatos) {
+    window.CurvaSWidget.unmount(container);
+    return;
+  }
+
+  /** @type {Array<{periodo:string, programado:number, real:number|null}>} */
+  const data = meses.map(m => ({
+    periodo:    m.mes,
+    programado: m.pa != null ? m.pa : (m.pb != null ? m.pb : 0),
+    real:       m.af != null ? m.af : null,
+  }));
+
+  // periodoActual: último periodo con dato real
+  let periodoActual;
+  for (let i = meses.length - 1; i >= 0; i--) {
+    if (meses[i].af != null) { periodoActual = meses[i].mes; break; }
+  }
+
+  const fechaCorteEl = document.getElementById('d-fecha-corte');
+  const fechaCorte = fechaCorteEl ? fechaCorteEl.textContent.trim() : '';
+  const subtitulo = fechaCorte
+    ? `Comparativo programado vs ejecutado · corte ${fechaCorte}`
+    : undefined;
+
+  window.CurvaSWidget.render(container, { data, periodoActual, subtitulo });
+}
+
 function renderMeses() {
   const tbody = document.getElementById('prog-tbody');
   tbody.innerHTML = meses.map(m => `
@@ -654,6 +709,7 @@ function addMes() {
   meses.push({mes, pb, pa, af, ac, activo:true});
   renderMeses();
   ['m-mes','m-pb','m-pa','m-af','m-ac'].forEach(id=>document.getElementById(id).value='');
+  renderCurvaS();
   toast('Mes agregado al cronograma');
 }
 
@@ -672,6 +728,7 @@ function mostrarFormAvancesMensuales() {
   meses.forEach(m => m.activo = false);
   meses.push({ mes: periodo, pb: progBase, pa: progActual, af: avanceFis, ac: devengado, activo: true });
   renderMeses();
+  renderCurvaS();
   document.getElementById('prog-tabla-container').style.display = 'block';
   document.getElementById('prog-empty-msg').style.display = 'none';
   toast('✓ Mes agregado al cronograma');
@@ -1192,6 +1249,7 @@ function rellenarFormulario() {
 
   // Actualizar display
   actualizar();
+  renderCurvaS();
 }
 
 // ══════════════════════════════════════════
