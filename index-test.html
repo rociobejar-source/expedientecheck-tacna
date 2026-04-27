@@ -24,6 +24,8 @@
       --naranja-lt:#fef3ec;
       --verde:     #2a7d4f;
       --verde-lt:  #e8f5ee;
+      --indigo:    #4338ca;
+      --indigo-lt: #eef2ff;
       --sans:      'DM Sans', sans-serif;
       --mono:      'DM Mono', monospace;
     }
@@ -321,6 +323,8 @@
     .badge.gris::before     { background: var(--muted);    }
     .badge.naranja  { background: var(--naranja-lt);   color: var(--naranja);  }
     .badge.naranja::before  { background: var(--naranja);  }
+    .badge.indigo   { background: var(--indigo-lt);    color: var(--indigo);   }
+    .badge.indigo::before   { background: var(--indigo);   }
 
     .estado-dot {
       display: flex;
@@ -949,6 +953,16 @@ function calcF12bVencido(row) {
   return diffDias > 30;
 }
 
+function calcObraAtrasada(row) {
+  const fin = row.FEC_FIN_EJEC_FISICA;
+  if (fin == null || fin === '') return false;
+  const fechaFin = new Date(String(fin).replace(' ', 'T'));
+  if (isNaN(fechaFin)) return false;
+  const avFisico = row.AVANCE_FISICO ?? null;
+  if (avFisico === null || avFisico === '') return false;
+  return fechaFin <= new Date() && parseFloat(avFisico) < 100;
+}
+
 // ── CARGAR CAT_ENTIDADES (una sola vez) ──────────────────────
 async function cargarCatEntidades() {
   try {
@@ -1382,6 +1396,7 @@ function renderTabla() {
     const sinFisico = fis === null;
     const brecha   = fis != null ? (avFin - fis) : null;
     const f12bVenc = calcF12bVencido(o);
+    const obraAtrasada = calcObraAtrasada(o);
 
     const alertaTitle = sinFisico ? 'Sin avance físico declarado' : '';
     const badgeAlerta = alerta === 'rojo'
@@ -1432,7 +1447,7 @@ function renderTabla() {
       <td class="monto">${fmtM(o.PIM_ANIO_ACTUAL)}</td>
       <td class="monto">${fmtM(o.DEV_ANIO_ACTUAL)}</td>
       <td>${brechaCell}</td>
-      <td>${badgeAlerta}${f12bVenc ? ' <span class="badge naranja">F12B vencido</span>' : ''}</td>
+      <td>${badgeAlerta}${f12bVenc ? ' <span class="badge naranja">F12B vencido</span>' : ''}${obraAtrasada ? ' <span class="badge indigo">Obra atrasada</span>' : ''}</td>
       <td>${estadoDot}</td>
       <td>
         <button class="btn-detalle" data-code="${esc(o.CODIGO_UNICO)}">Ver detalle</button>
