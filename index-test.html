@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>ExpedienteCheck · Monitor SSI (Test)</title>
+  <title>ExpedienteCheck · Monitor de Inversiones SSI-MEF</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
@@ -42,6 +42,43 @@
     }
     .logo { color: #ffffff; font-weight: 700; font-size: 15px; letter-spacing: -0.3px; }
     .header-right { color: #9ca3af; font-size: 13px; }
+    .header-nav { display: flex; align-items: center; gap: 6px; }
+    .nav-vista {
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: 20px;
+      color: #9ca3af;
+      font-family: var(--sans);
+      font-size: 12px;
+      font-weight: 500;
+      padding: 6px 14px;
+      cursor: pointer;
+      transition: all 0.15s;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .nav-vista:hover { color: #ffffff; border-color: #4b5563; }
+    .nav-vista.active { background: #ffffff; color: #0f0f0f; border-color: #ffffff; }
+    .btn-ingresar {
+      background: var(--accent);
+      border: none;
+      border-radius: 8px;
+      color: #fff;
+      font-family: var(--sans);
+      font-size: 12px;
+      font-weight: 600;
+      padding: 7px 16px;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      margin-left: 10px;
+      transition: opacity 0.2s;
+      white-space: nowrap;
+    }
+    .btn-ingresar:hover { opacity: 0.85; }
 
     /* ── MAIN ── */
     main { padding: 28px 24px; max-width: 1300px; margin: 0 auto; }
@@ -445,14 +482,40 @@
       margin-bottom: 20px;
       font-weight: 500;
     }
+
+    /* ── BTN PDF ── */
+    .btn-pdf {
+      background: var(--accent);
+      border: none;
+      border-radius: 8px;
+      color: #fff;
+      font-family: var(--sans);
+      font-size: 13px;
+      font-weight: 500;
+      padding: 9px 18px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      transition: opacity 0.2s;
+      white-space: nowrap;
+    }
+    .btn-pdf:hover { opacity: 0.85; }
+    .btn-pdf:disabled { opacity: 0.4; cursor: not-allowed; }
   </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body>
 
 <!-- HEADER -->
 <header>
-  <span class="logo">ExpedienteCheck <span style="color:#6b7280;font-weight:400;font-size:12px;margin-left:6px;">· TEST</span></span>
-  <span class="header-right" id="header-count">Cargando...</span>
+  <span class="logo">ExpedienteCheck</span>
+  <div class="header-nav">
+    <span style="color:#6b7280;font-size:12px;margin-right:4px;">Ver como:</span>
+    <button class="nav-vista active" onclick="void(0)">Vista ciudadana</button>
+    <a class="nav-vista" href="https://institucional.expedientecheck.com" target="_blank">Vista institucional <span style="font-size:10px;">⚡</span></a>
+    <a class="btn-ingresar" href="login.html">Ingresar a mi cuenta</a>
+  </div>
 </header>
 
 <!-- MAIN -->
@@ -462,9 +525,14 @@
       <div class="page-title"><strong>Monitor de Inversiones</strong> <span>SSI · MEF</span></div>
       <div class="page-subtitle" id="page-subtitle">Datos SSI · MEF · <span id="fecha-hoy"></span></div>
     </div>
-    <button class="btn-actualizar" id="btn-actualizar">
-      <span id="icon-refresh">↻</span> Actualizar datos
-    </button>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <button class="btn-pdf" id="btn-pdf" style="display:none;">
+        ↓ Descargar reporte PDF
+      </button>
+      <button class="btn-actualizar" id="btn-actualizar">
+        <span id="icon-refresh">↻</span> Actualizar datos
+      </button>
+    </div>
   </div>
 
   <!-- FILTERS SELECTORS: NIVEL → SECTOR → [DEPTO → PROV →] ENTIDAD → UEI → ALERTA -->
@@ -544,6 +612,11 @@
       <div class="stat-sub">Requieren atención</div>
     </div>
   </div>
+
+  <!-- NOTA PIM -->
+  <p style="font-size:11px;color:var(--muted);margin-top:8px;line-height:1.5;text-align:center;">
+    * PIM corresponde a proyectos de inversión e IOARR registrados en el Banco de Inversiones (SSI-MEF). No incluye estudios de preinversión ni inversiones genéricas.
+  </p>
 
   <!-- ALERT BANNER -->
   <div class="alert-banner" id="alert-banner"></div>
@@ -788,6 +861,8 @@ async function cargarKPIs() {
     document.getElementById('kpi-dev').textContent =
       'S/ ' + (dev/1e6).toLocaleString('en-US',
         {minimumFractionDigits:1, maximumFractionDigits:1}) + 'M';
+    const devPct = pim > 0 ? (dev / pim * 100).toFixed(1) + '% del PIM 2026' : '% del PIM 2026';
+    document.getElementById('stat-dev-pct').textContent = devPct;
     document.getElementById('kpi-rojos').textContent =
       Number(stats.rojos || 0).toLocaleString('es-PE');
     document.getElementById('kpi-amarillos').textContent =
@@ -1083,6 +1158,7 @@ document.querySelectorAll('.filter-btn').forEach(btn => {
 });
 
 function refresh() {
+  actualizarBtnPdf();
   cargarKPIs().catch(console.error);
   cargarTabla(0).catch(console.error);
 }
@@ -1262,6 +1338,313 @@ document.getElementById('btn-cancel').addEventListener('click', cerrarModal);
 document.getElementById('overlay').addEventListener('click', e => {
   if (e.target === document.getElementById('overlay')) cerrarModal();
 });
+
+// ── BOTÓN PDF ────────────────────────────────────────────────
+function actualizarBtnPdf() {
+  const btn = document.getElementById('btn-pdf');
+  if (btn) btn.style.display = filtroUei ? 'flex' : 'none';
+}
+
+async function descargarPDF() {
+  if (!filtroUei) return;
+
+  const btn = document.getElementById('btn-pdf');
+  const originalHTML = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spin">↻</span> Generando...';
+
+  try {
+    const JsPDF = (window.jspdf && window.jspdf.jsPDF) || window.jsPDF;
+    if (!JsPDF) {
+      alert('La librería jsPDF no cargó. Verifica tu conexión a internet.');
+      btn.disabled = false;
+      btn.innerHTML = originalHTML;
+      return;
+    }
+    const doc = new JsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+
+    const pageW = doc.internal.pageSize.getWidth();   // 297
+    const pageH = doc.internal.pageSize.getHeight();  // 210
+    const M = 14;
+    const cW = pageW - M * 2; // 269
+
+    const ueiNombre = filtroUei;
+    const fechaGen  = new Date().toLocaleDateString('es-PE', { day: 'numeric', month: 'long', year: 'numeric' });
+
+    // ── helpers ──────────────────────────────────────────────
+    const trunc = (s, n) => {
+      if (s == null || s === '') return '—';
+      s = String(s);
+      return s.length > n ? s.substring(0, n - 1) + '…' : s;
+    };
+
+    const drawPageFooter = (pageNum, total) => {
+      doc.setPage(pageNum);
+      doc.setFillColor(240, 237, 230);
+      doc.rect(0, pageH - 9, pageW, 9, 'F');
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(6.5);
+      doc.setTextColor(122, 117, 112);
+      doc.text('ExpedienteCheck · Monitor de Inversiones SSI-MEF · www.expedientecheck.com', M, pageH - 3.5);
+      doc.text(`Página ${pageNum} de ${total}`, pageW - M, pageH - 3.5, { align: 'right' });
+    };
+
+    let y = 0;
+
+    // ── HEADER BAR ───────────────────────────────────────────
+    doc.setFillColor(15, 15, 15);
+    doc.rect(0, 0, pageW, 20, 'F');
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(13);
+    doc.setTextColor(255, 255, 255);
+    doc.text('ExpedienteCheck', M, 11);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor(156, 163, 175);
+    doc.text('Monitor de Inversiones · SSI-MEF', M, 17);
+
+    doc.setFontSize(8);
+    doc.setTextColor(156, 163, 175);
+    doc.text(`Generado: ${fechaGen}`, pageW - M, 14, { align: 'right' });
+
+    y = 29;
+
+    // ── TÍTULO ───────────────────────────────────────────────
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(15);
+    doc.setTextColor(26, 26, 26);
+    doc.text('Reporte de Monitoreo de Inversiones', M, y);
+    y += 7;
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    doc.setTextColor(122, 117, 112);
+    doc.text(`Unidad Ejecutora de Inversiones (UEI): ${ueiNombre}`, M, y);
+    y += 10;
+
+    // divider
+    doc.setDrawColor(224, 221, 214);
+    doc.setLineWidth(0.3);
+    doc.line(M, y, pageW - M, y);
+    y += 7;
+
+    // ── KPIs ─────────────────────────────────────────────────
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.setTextColor(122, 117, 112);
+    doc.text('INDICADORES DE EJECUCIÓN', M, y);
+    y += 5;
+
+    const kpis = [
+      { label: 'TOTAL INVERSIONES',  val: document.getElementById('kpi-total').textContent,    sub: 'Con PIM 2026 > 0',          clr: [26,26,26]    },
+      { label: 'PIM 2026',           val: document.getElementById('kpi-pim').textContent,      sub: 'Presupuesto vigente 2026',   clr: [42,125,79]   },
+      { label: 'DEVENGADO 2026',     val: document.getElementById('kpi-dev').textContent,      sub: document.getElementById('stat-dev-pct').textContent, clr: [42,125,79] },
+      { label: 'ALERTAS ROJAS',      val: document.getElementById('kpi-rojos').textContent,    sub: 'Brecha ejec-físico >20%',   clr: [192,57,43]   },
+      { label: 'ALERTAS AMARILLAS',  val: document.getElementById('kpi-amarillos').textContent, sub: 'Requieren atención',        clr: [183,134,11]  },
+    ];
+
+    const kW = (cW - 4 * 3) / 5;
+    kpis.forEach((k, i) => {
+      const kx = M + i * (kW + 3);
+      doc.setFillColor(250, 249, 246);
+      doc.setDrawColor(224, 221, 214);
+      doc.setLineWidth(0.3);
+      doc.roundedRect(kx, y, kW, 21, 2, 2, 'FD');
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(6);
+      doc.setTextColor(122, 117, 112);
+      doc.text(k.label, kx + 3, y + 5.5);
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(11);
+      doc.setTextColor(...k.clr);
+      doc.text(trunc(k.val, 18), kx + 3, y + 13.5);
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(6.5);
+      doc.setTextColor(122, 117, 112);
+      doc.text(k.sub, kx + 3, y + 19);
+    });
+    y += 26;
+
+    // divider
+    doc.setDrawColor(224, 221, 214);
+    doc.setLineWidth(0.3);
+    doc.line(M, y, pageW - M, y);
+    y += 6;
+
+    // ── TABLE ────────────────────────────────────────────────
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.setTextColor(122, 117, 112);
+    doc.text('DETALLE DE INVERSIONES', M, y);
+    y += 5;
+
+    const cols = [
+      { h: 'Nombre Inversión', w: 80, maxCh: 55 },
+      { h: 'Código Único',     w: 22, maxCh: 14 },
+      { h: 'PIM 2026 (S/)',    w: 26, maxCh: 16 },
+      { h: 'Dev. 2026 (S/)',   w: 26, maxCh: 16 },
+      { h: 'Av. Físico',       w: 20, maxCh: 10 },
+      { h: 'Av. Ejec.',        w: 20, maxCh: 10 },
+      { h: 'Brecha',           w: 20, maxCh: 10 },
+      { h: 'Alerta',           w: 55, maxCh: 25 },
+    ];
+
+    const rowH = 7;
+    const hdrH = 8;
+
+    const drawTblHeader = (yy) => {
+      doc.setFillColor(15, 15, 15);
+      doc.rect(M, yy, cW, hdrH, 'F');
+      let cx = M;
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(6.5);
+      doc.setTextColor(156, 163, 175);
+      cols.forEach(col => { doc.text(col.h, cx + 2, yy + 5.5); cx += col.w; });
+      return yy + hdrH;
+    };
+
+    y = drawTblHeader(y);
+
+    const data = getInversionesFiltradas()
+      .sort((a, b) => (Number(b.PIM_ANIO_ACTUAL) || 0) - (Number(a.PIM_ANIO_ACTUAL) || 0));
+
+    data.forEach((o, idx) => {
+      if (y + rowH > pageH - 12) {
+        doc.addPage();
+        y = M;
+        y = drawTblHeader(y);
+      }
+
+      if (idx % 2 === 0) {
+        doc.setFillColor(250, 249, 246);
+        doc.rect(M, y, cW, rowH, 'F');
+      }
+      doc.setDrawColor(224, 221, 214);
+      doc.setLineWidth(0.2);
+      doc.line(M, y + rowH, M + cW, y + rowH);
+
+      const devAcum = parseFloat(o.DEVEN_ACUMUL_ANIO_ANT) || 0;
+      const devAnio = parseFloat(o.DEV_ANIO_ACTUAL) || 0;
+      const costo   = parseFloat(o.COSTO_ACTUALIZADO) || 0;
+      const avFin   = costo > 0 ? (devAcum + devAnio) / costo * 100 : 0;
+      const fis     = o.AVANCE_FISICO != null ? parseFloat(o.AVANCE_FISICO) : null;
+      const brecha  = fis != null ? avFin - fis : null;
+
+      const alertaTxt = o.alerta === 'rojo' ? 'Riesgo alto' : o.alerta === 'amarillo' ? 'Riesgo medio' : 'Sin alerta';
+      const alertaClr = o.alerta === 'rojo' ? [192,57,43] : o.alerta === 'amarillo' ? [183,134,11] : [42,125,79];
+
+      const cells = [
+        { txt: trunc(o.NOMBRE_INVERSION || '—', cols[0].maxCh), clr: [26,26,26],    bold: true  },
+        { txt: trunc(o.CODIGO_UNICO || '—',      cols[1].maxCh), clr: [122,117,112], bold: false },
+        { txt: fmtM(o.PIM_ANIO_ACTUAL),                          clr: [26,26,26],    bold: false },
+        { txt: fmtM(o.DEV_ANIO_ACTUAL),                          clr: [26,26,26],    bold: false },
+        { txt: fis != null ? fis.toFixed(1) + '%' : '—',        clr: [59,130,246],  bold: false },
+        { txt: avFin.toFixed(1) + '%',                           clr: [42,125,79],   bold: false },
+        { txt: brecha != null ? (brecha > 0 ? '+' : '') + brecha.toFixed(1) + '%' : 'S/D', clr: alertaClr, bold: false },
+        { txt: alertaTxt,                                        clr: alertaClr,     bold: true  },
+      ];
+
+      let cx = M;
+      doc.setFontSize(6.5);
+      cells.forEach((cell, ci) => {
+        doc.setFont('helvetica', cell.bold ? 'bold' : 'normal');
+        doc.setTextColor(...cell.clr);
+        doc.text(cell.txt, cx + 2, y + 4.8);
+        cx += cols[ci].w;
+      });
+      y += rowH;
+    });
+
+    if (data.length === 0) {
+      doc.setFillColor(250, 249, 246);
+      doc.rect(M, y, cW, 12, 'F');
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      doc.setTextColor(122, 117, 112);
+      doc.text('Sin inversiones para mostrar.', M + cW / 2, y + 8, { align: 'center' });
+      y += 12;
+    }
+
+    // ── BLOQUE PROMOCIONAL ───────────────────────────────────
+    y += 10;
+    const promoH = 72;
+    if (y + promoH > pageH - 12) {
+      doc.addPage();
+      y = M + 10;
+    }
+
+    doc.setFillColor(232, 245, 238);
+    doc.setDrawColor(184, 223, 201);
+    doc.setLineWidth(0.4);
+    doc.roundedRect(M, y, cW, promoH, 3, 3, 'FD');
+
+    const px = M + 8;
+    let py = y + 9;
+
+    // Título grande
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(12);
+    doc.setTextColor(42, 125, 79);
+    doc.text('¿Quieres acelerar la ejecución de inversiones en tu entidad con un enfoque PMO?', px, py);
+    py += 8;
+
+    // Párrafo 1
+    const pW = cW - 16;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7.5);
+    doc.setTextColor(26, 26, 26);
+    const p1 = 'ExpedienteCheck es una plataforma SaaS que transforma el seguimiento de obras públicas en un sistema digital, ordenado y en tiempo real. Centraliza la información del expediente, define claramente los roles (residente, supervisor, responsable y gerente) y asegura trazabilidad completa: quién hizo qué, cuándo y con qué sustento.';
+    const p1Lines = doc.splitTextToSize(p1, pW);
+    doc.text(p1Lines, px, py);
+    py += p1Lines.length * 4 + 2;
+
+    // Párrafo 2
+    const p2 = 'Convierte datos dispersos en un tablero de control que te permite identificar riesgos, destrabar proyectos y tomar decisiones con respaldo técnico. Además, incorpora una vista ejecutiva que facilita una toma de decisiones más ágil y oportuna.';
+    const p2Lines = doc.splitTextToSize(p2, pW);
+    doc.text(p2Lines, px, py);
+    py += p2Lines.length * 4 + 4;
+
+    // Tags
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(7);
+    doc.setTextColor(42, 125, 79);
+    doc.text('Implementación guiada  ·  Soporte institucional  ·  Configuración por roles  ·  Adaptado al ciclo de inversión pública', px, py);
+    py += 6;
+
+    // Contacto
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor(26, 26, 26);
+    doc.text('Agenda demo: info@expedientecheck.com', px, py);
+    py += 5;
+    doc.text('Más información: institucional.expedientecheck.com', px, py);
+
+    // ── FOOTERS EN TODAS LAS PÁGINAS ──────────────────────────
+    const totalPages = doc.internal.getNumberOfPages();
+    for (let p = 1; p <= totalPages; p++) drawPageFooter(p, totalPages);
+
+    // ── GUARDAR ──────────────────────────────────────────────
+    const fechaSlug = new Date().toISOString().split('T')[0];
+    const ueiSlug   = ueiNombre.replace(/[^a-zA-Z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '').toLowerCase().substring(0, 40);
+    doc.save(`expedientecheck-reporte-${ueiSlug}-${fechaSlug}.pdf`);
+    toast('Reporte PDF descargado correctamente', 'success');
+
+  } catch (err) {
+    console.error('PDF error:', err);
+    alert('Error al generar PDF: ' + err.message);
+    toast('Error al generar PDF: ' + err.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = originalHTML;
+  }
+}
+
+document.getElementById('btn-pdf').addEventListener('click', descargarPDF);
 
 // ── INICIO ───────────────────────────────────────────────────
 cargarDatos();
