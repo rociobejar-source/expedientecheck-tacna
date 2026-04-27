@@ -353,6 +353,20 @@
     }
     .btn-detalle:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-lt); }
 
+    /* Badge entidad externa (UEI de otra entidad) */
+    .badge-ext {
+      display: inline-block;
+      background: var(--naranja-lt);
+      color: var(--naranja);
+      font-size: 9px;
+      font-weight: 700;
+      border-radius: 4px;
+      padding: 1px 5px;
+      margin-left: 4px;
+      vertical-align: middle;
+      white-space: nowrap;
+    }
+
     /* Loading */
     .skeleton {
       background: linear-gradient(90deg, var(--border) 25%, #e8e4dc 50%, var(--border) 75%);
@@ -860,14 +874,20 @@ async function cargarCatEntidades() {
 }
 
 // ── FILTROS GLOBALES ─────────────────────────────────────────
+// Cuando hay UEI seleccionada, la UEI es el filtro real de resultados.
+// Los demás filtros solo sirven para navegar hasta la UEI.
 function applyFilters(query) {
   query = query.gt('PIM_ANIO_ACTUAL', 0);
-  if (filtroNivel)        query = query.eq('NIVEL',        filtroNivel);
-  if (filtroSector)       query = query.eq('SECTOR',       filtroSector);
-  if (filtroDepartamento) query = query.eq('DEPARTAMENTO', filtroDepartamento);
-  if (filtroProvincia)    query = query.eq('PROVINCIA',    filtroProvincia);
-  if (filtroEntidad)      query = query.eq('ENTIDAD',      filtroEntidad);
-  if (filtroUei)          query = query.eq('NOMBRE_UEI',   filtroUei);
+  if (filtroUei) {
+    // UEI seleccionada: mostrar TODAS las inversiones de esa UEI sin importar entidad
+    query = query.eq('NOMBRE_UEI', filtroUei);
+  } else {
+    if (filtroNivel)        query = query.eq('NIVEL',        filtroNivel);
+    if (filtroSector)       query = query.eq('SECTOR',       filtroSector);
+    if (filtroDepartamento) query = query.eq('DEPARTAMENTO', filtroDepartamento);
+    if (filtroProvincia)    query = query.eq('PROVINCIA',    filtroProvincia);
+    if (filtroEntidad)      query = query.eq('ENTIDAD',      filtroEntidad);
+  }
   return query;
 }
 
@@ -875,12 +895,16 @@ function applyFilters(query) {
 async function cargarKPIs() {
   try {
     const params = new URLSearchParams();
-    if (filtroNivel)        params.set('nivel', filtroNivel);
-    if (filtroSector)       params.set('sector', filtroSector);
-    if (filtroDepartamento) params.set('departamento', filtroDepartamento);
-    if (filtroProvincia)    params.set('provincia', filtroProvincia);
-    if (filtroEntidad)      params.set('entidad', filtroEntidad);
-    if (filtroUei)          params.set('uei', filtroUei);
+    if (filtroUei) {
+      // UEI seleccionada: todos los KPIs del universo completo de esa UEI
+      params.set('uei', filtroUei);
+    } else {
+      if (filtroNivel)        params.set('nivel', filtroNivel);
+      if (filtroSector)       params.set('sector', filtroSector);
+      if (filtroDepartamento) params.set('departamento', filtroDepartamento);
+      if (filtroProvincia)    params.set('provincia', filtroProvincia);
+      if (filtroEntidad)      params.set('entidad', filtroEntidad);
+    }
     const res  = await fetch(`${API}/api/kpis?${params}`);
     const stats = await res.json();
     kpiStats = stats;
@@ -915,12 +939,16 @@ async function cargarTabla(page = 0) {
   tbody.innerHTML = `<tr><td colspan="12" style="padding:32px;text-align:center;color:var(--muted);font-size:13px;"><span id="loading-msg">Cargando...</span></td></tr>`;
 
   const filters = {};
-  if (filtroNivel)        filters['NIVEL']        = filtroNivel;
-  if (filtroSector)       filters['SECTOR']       = filtroSector;
-  if (filtroDepartamento) filters['DEPARTAMENTO'] = filtroDepartamento;
-  if (filtroProvincia)    filters['PROVINCIA']    = filtroProvincia;
-  if (filtroEntidad)      filters['ENTIDAD']      = filtroEntidad;
-  if (filtroUei)          filters['NOMBRE_UEI']   = filtroUei;
+  if (filtroUei) {
+    // UEI seleccionada: ignorar jerarquía, filtrar solo por UEI
+    filters['NOMBRE_UEI'] = filtroUei;
+  } else {
+    if (filtroNivel)        filters['NIVEL']        = filtroNivel;
+    if (filtroSector)       filters['SECTOR']       = filtroSector;
+    if (filtroDepartamento) filters['DEPARTAMENTO'] = filtroDepartamento;
+    if (filtroProvincia)    filters['PROVINCIA']    = filtroProvincia;
+    if (filtroEntidad)      filters['ENTIDAD']      = filtroEntidad;
+  }
 
   function applyFilters(query) {
     query = query.gt('PIM_ANIO_ACTUAL', 0);
@@ -935,7 +963,7 @@ async function cargarTabla(page = 0) {
   // Apply alert filter server-side (alerta is a pre-calculated column)
   if (filtroAlerta) query = query.eq('alerta', filtroAlerta);
 
-  const loadAll = !!filtroEntidad;
+  const loadAll = !!filtroUei;  // UEI es el filtro real; cargar todo su universo
   if (loadAll) {
     // Load all rows when ENTIDAD or (alert + nivel) active — counts must be exact
     const { data, error } = await query;
@@ -1307,7 +1335,7 @@ function renderTabla() {
       <td>
         <div class="obra-nombre">${esc(o.NOMBRE_INVERSION || 'Sin nombre')}${f12bDot}</div>
       </td>
-      <td style="font-size:12px;color:var(--muted)">${esc(o.ENTIDAD || '—')}</td>
+      <td style="font-size:12px;color:var(--muted)">${esc(o.ENTIDAD || '—')}${filtroEntidad && o.ENTIDAD !== filtroEntidad ? `<br><span class="badge-ext" title="Registrada por entidad diferente a la seleccionada en el filtro">↗ Ext.</span>` : ''}</td>
       <td style="font-family:var(--mono);font-size:12px;color:var(--muted)">${esc(o.CODIGO_UNICO || '—')}</td>
       <td class="monto">${fmtM(o.COSTO_ACTUALIZADO)}</td>
       <td class="progress-col"><div class="prog-row">${fBar}</div></td>
@@ -1528,15 +1556,16 @@ async function descargarPDF() {
     y += 5;
 
     const cols = [
-      { h: 'Nombre Inversión', w: 80, maxCh: 55 },
-      { h: 'Código Único',     w: 22, maxCh: 14 },
-      { h: 'PIM 2026 (S/)',    w: 26, maxCh: 16 },
-      { h: 'Dev. 2026 (S/)',   w: 26, maxCh: 16 },
-      { h: 'Av. Físico',       w: 20, maxCh: 10 },
-      { h: 'Av. Ejec.',        w: 20, maxCh: 10 },
-      { h: 'Brecha',           w: 20, maxCh: 10 },
-      { h: 'Alerta',           w: 55, maxCh: 25 },
-    ];
+      { h: 'Nombre Inversión',    w: 65, maxCh: 45 },
+      { h: 'Entidad registrante', w: 47, maxCh: 32 },
+      { h: 'Código Único',        w: 22, maxCh: 14 },
+      { h: 'PIM 2026 (S/)',       w: 26, maxCh: 16 },
+      { h: 'Dev. 2026 (S/)',      w: 26, maxCh: 16 },
+      { h: 'Av. Físico',          w: 20, maxCh: 10 },
+      { h: 'Av. Ejec.',           w: 20, maxCh: 10 },
+      { h: 'Brecha',              w: 20, maxCh: 10 },
+      { h: 'Alerta',              w: 23, maxCh: 14 },
+    ]; // suma: 65+47+22+26+26+20+20+20+23 = 269
 
     const rowH = 7;
     const hdrH = 8;
@@ -1582,9 +1611,11 @@ async function descargarPDF() {
       const alertaTxt = o.alerta === 'rojo' ? 'Riesgo alto' : o.alerta === 'amarillo' ? 'Riesgo medio' : 'Sin alerta';
       const alertaClr = o.alerta === 'rojo' ? [192,57,43] : o.alerta === 'amarillo' ? [183,134,11] : [42,125,79];
 
+      const esExtPdf = !!(filtroEntidad && o.ENTIDAD !== filtroEntidad);
       const cells = [
         { txt: trunc(o.NOMBRE_INVERSION || '—', cols[0].maxCh), clr: [26,26,26],    bold: true  },
-        { txt: trunc(o.CODIGO_UNICO || '—',      cols[1].maxCh), clr: [122,117,112], bold: false },
+        { txt: trunc(o.ENTIDAD || '—',           cols[1].maxCh), clr: esExtPdf ? [192,57,43] : [122,117,112], bold: esExtPdf },
+        { txt: trunc(o.CODIGO_UNICO || '—',      cols[2].maxCh), clr: [122,117,112], bold: false },
         { txt: fmtM(o.PIM_ANIO_ACTUAL),                          clr: [26,26,26],    bold: false },
         { txt: fmtM(o.DEV_ANIO_ACTUAL),                          clr: [26,26,26],    bold: false },
         { txt: fis != null ? fis.toFixed(1) + '%' : '—',        clr: [59,130,246],  bold: false },
