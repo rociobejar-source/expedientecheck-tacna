@@ -714,6 +714,32 @@
           <div class="val" id="d-uei" style="font-family:var(--sans);font-weight:500">—</div>
         </div>
       </div>
+
+      <hr class="divider">
+
+      <div class="info-grid">
+        <div class="info-item">
+          <label>Certificado 2026</label>
+          <div class="val" id="d-certif">—</div>
+        </div>
+        <div class="info-item">
+          <label>Compromiso Anual 2026</label>
+          <div class="val" id="d-comprom">—</div>
+        </div>
+        <div class="info-item">
+          <label>Inicio Ejec. Física</label>
+          <div class="val" id="d-fec-ini" style="font-family:var(--sans)">—</div>
+        </div>
+        <div class="info-item">
+          <label>Fin Ejec. Física</label>
+          <div class="val" id="d-fec-fin" style="font-family:var(--sans)">—</div>
+        </div>
+        <div class="info-item" style="grid-column:1/-1">
+          <label>Última declaración F12B (Avance Físico)</label>
+          <div class="val" id="d-f12b-fecha" style="font-family:var(--sans)">—</div>
+        </div>
+      </div>
+
       <div id="d-f12b-alert" style="display:none; background:var(--naranja-lt); border:1px solid #f6c8a0; border-radius:8px; padding:12px 14px; font-size:13px; color:var(--naranja); margin-bottom:8px;">
         ⚠️ <strong>F12B sin actualizar.</strong> La última declaración estimada de avance físico tiene más de 30 días. Según normativa debe registrarse en los primeros 10 días hábiles del mes.
       </div>
@@ -777,6 +803,13 @@ const fmtMFull = v => {
   return 'S/ ' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 };
 const fmtPct = v => v != null && v !== '' ? Number(v).toFixed(1)+'%' : '—';
+const fmtFecha = v => {
+  if (!v || v === '') return '—';
+  // API devuelve "2025-03-15 00:00:00" o "2025-03-15"
+  const d = new Date(String(v).replace(' ', 'T'));
+  if (isNaN(d)) return String(v).substring(0, 10);
+  return d.toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'America/Lima' });
+};
 const esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 
 function toast(msg, tipo='success') {
@@ -1322,6 +1355,17 @@ function abrirModal(inv) {
   document.getElementById('d-sector').textContent    = inv.SECTOR || '—';
   document.getElementById('d-entidad').textContent   = inv.ENTIDAD || '—';
   document.getElementById('d-uei').textContent       = inv.NOMBRE_UEI || '—';
+
+  // ── Nuevos campos ──────────────────────────────────────────
+  document.getElementById('d-certif').textContent    = fmtMFull(inv.CERTIF_ANIO_ACTUAL);
+  document.getElementById('d-comprom').textContent   = fmtMFull(inv.COMPROM_ANUAL_ANIO_ACTUAL);
+  document.getElementById('d-fec-ini').textContent   = fmtFecha(inv.FEC_INI_EJEC_FISICA);
+  document.getElementById('d-fec-fin').textContent   = fmtFecha(inv.FEC_FIN_EJEC_FISICA);
+
+  const f12bFecha = inv.ULT_FEC_DECLA_ESTIM;
+  document.getElementById('d-f12b-fecha').textContent = fmtFecha(f12bFecha);
+  document.getElementById('d-f12b-fecha').style.color =
+    f12bVenc ? 'var(--naranja)' : (f12bFecha ? 'var(--text)' : 'var(--muted)');
 
   document.getElementById('d-f12b-alert').style.display = f12bVenc ? 'block' : 'none';
 
