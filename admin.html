@@ -319,6 +319,12 @@
         </div>
         <button class="btn-nuevo" id="btn-new-obra">+ Registrar CUI</button>
       </div>
+      <div id="filtro-municipalidad-wrap" style="display:none; margin-bottom:12px; padding:0 2px;">
+        <label style="font-size:13px; font-weight:600; margin-right:8px;">Filtrar por municipalidad:</label>
+        <select id="filtro-municipalidad" style="padding:6px 10px; border-radius:6px; border:1px solid #e2e8f0; font-size:13px;">
+          <option value="">— Todas —</option>
+        </select>
+      </div>
       <div class="table-wrap">
         <table>
           <thead>
@@ -693,6 +699,8 @@
     async function cargarObras() {
       const tbody = document.getElementById('tbody-obras');
       tbody.innerHTML = '<tr><td colspan="6" class="loading">Cargando...</td></tr>';
+      document.getElementById('filtro-municipalidad').value = '';
+      document.getElementById('filtro-municipalidad-wrap').style.display = 'none';
       try {
         const res  = await authedFetch(`${API}/api/admin/obras`);
         const data = await res.json();
@@ -730,6 +738,29 @@
             if (confirm(`¿Eliminar la obra "${btn.dataset.nombre}"?\nEsta acción no se puede deshacer.`))
               eliminarObra(btn.dataset.cui);
           }));
+
+        // ── Filtro por municipalidad (solo superadmin) ──
+        const filtroWrap = document.getElementById('filtro-municipalidad-wrap');
+        const filtroSelect = document.getElementById('filtro-municipalidad');
+        if (esSuperAdmin) {
+          // Poblar opciones desde valores únicos de la respuesta
+          const vals = [...new Set(
+            data.obras.map(o => o.municipalidad_display || '-').filter(v => v && v !== '-')
+          )].sort();
+          filtroSelect.innerHTML = '<option value="">— Todas —</option>' +
+            vals.map(v => `<option value="${esc(v)}">${esc(v)}</option>`).join('');
+          filtroWrap.style.display = 'block';
+          filtroSelect.onchange = function() {
+            const val = this.value;
+            document.querySelectorAll('#tbody-obras tr').forEach(tr => {
+              if (!val) { tr.style.display = ''; return; }
+              const cell = tr.cells[2];
+              tr.style.display = (cell && cell.textContent.trim() === val) ? '' : 'none';
+            });
+          };
+        } else {
+          filtroWrap.style.display = 'none';
+        }
       } catch(err) {
         tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state">Error: ${esc(err.message)}</div></td></tr>`;
       }

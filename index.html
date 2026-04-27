@@ -72,7 +72,22 @@
       background: var(--header);
       color: #ffffff;
     }
-    .header-right { color: #9ca3af; font-size: 13px; }
+    .header-right { display: flex; align-items: center; gap: 12px; }
+    .header-right #header-rol { color: #9ca3af; font-size: 13px; }
+    .btn-ingresar {
+      background: var(--accent);
+      color: #ffffff;
+      border: none;
+      border-radius: 6px;
+      font-family: var(--sans);
+      font-size: 12px;
+      font-weight: 600;
+      padding: 6px 14px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: opacity 0.15s;
+    }
+    .btn-ingresar:hover { opacity: 0.85; }
 
     /* ── ROLE SWITCHER ── */
     .role-bar {
@@ -531,14 +546,17 @@
 <!-- HEADER -->
 <header>
   <span class="logo">ExpedienteCheck</span>
-  <span class="header-right" id="header-rol">Vista ciudadana</span>
+  <div class="header-right">
+    <span id="header-rol">Vista ciudadana</span>
+    <a href="login.html" class="btn-ingresar">Ingresar a mi cuenta</a>
+  </div>
 </header>
 
 <!-- ROLE BAR -->
 <div class="role-bar">
   <span class="role-label">Ver como:</span>
   <button class="role-btn active" data-rol="ciudadana">Vista ciudadana</button>
-  <button class="role-btn" data-rol="institucional" id="btn-institucional">Vista institucional 🔒</button>
+  <a href="https://civic-investment-watch.lovable.app/vista-institucional" target="_blank" rel="noopener noreferrer" class="role-btn">Vista institucional 🔒</a>
 </div>
 
 <!-- MAIN -->
@@ -783,17 +801,6 @@ function toast(msg, tipo='success') {
 document.querySelectorAll('.role-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     const rol = btn.dataset.rol;
-
-    if (rol === 'institucional') {
-      // Botón Vista Institucional
-      const token = localStorage.getItem('expediente_token');
-      if (!token) {
-        window.location.href = 'login.html?redirect=institucional';
-      } else {
-        window.location.href = 'institutional.html';
-      }
-      return;
-    }
 
     // Vista Ciudadana - cambio normal
     document.querySelectorAll('.role-btn').forEach(b => b.classList.remove('active'));
