@@ -848,7 +848,7 @@ async function cargarKPIs() {
     if (filtroProvincia)    params.set('provincia', filtroProvincia);
     if (filtroEntidad)      params.set('entidad', filtroEntidad);
     if (filtroUei)          params.set('uei', filtroUei);
-    const res  = await fetch(`http://localhost:3003/api/kpis?${params}`);
+    const res  = await fetch(`${API}/api/kpis?${params}`);
     const stats = await res.json();
     kpiStats = stats;
     const pim = stats.pim || 0;
