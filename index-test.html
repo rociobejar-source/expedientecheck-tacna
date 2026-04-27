@@ -440,28 +440,37 @@
     .presup-flow {
       display: grid;
       grid-template-columns: 1fr auto 1fr auto 1fr auto 1fr;
-      align-items: center;
-      gap: 6px;
+      align-items: stretch;
+      gap: 0;
       background: var(--bg);
       border: 1px solid var(--border);
       border-radius: 10px;
-      padding: 16px 14px;
+      padding: 16px 10px;
       margin-bottom: 4px;
     }
     @media (max-width: 560px) {
-      .presup-flow { grid-template-columns: 1fr 1fr; }
+      .presup-flow { grid-template-columns: 1fr 1fr; gap: 12px; }
       .presup-arrow { display: none; }
     }
     .presup-arrow {
       color: var(--border);
-      font-size: 18px;
-      text-align: center;
+      font-size: 16px;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding-top: 22px;
+      padding-left: 4px;
+      padding-right: 4px;
       user-select: none;
     }
     .presup-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
       text-align: center;
-      padding: 4px 2px;
+      padding: 4px 6px;
     }
+    .presup-item-dev { border-left: 1px solid var(--border); }
     .presup-item-dev .presup-val { color: var(--accent); }
     .presup-label {
       font-size: 10px;
@@ -469,19 +478,23 @@
       text-transform: uppercase;
       letter-spacing: 0.5px;
       color: var(--muted);
-      margin-bottom: 4px;
+      margin-bottom: 6px;
+      white-space: nowrap;
     }
     .presup-val {
-      font-size: 14px;
+      font-size: 15px;
       font-weight: 700;
       font-family: var(--mono);
       letter-spacing: -0.3px;
       line-height: 1.2;
+      margin-bottom: 6px;
+      white-space: nowrap;
     }
     .presup-desc {
       font-size: 10px;
       color: var(--muted);
-      margin-top: 3px;
+      line-height: 1.3;
+      max-width: 90px;
     }
 
     .info-grid {
