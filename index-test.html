@@ -964,12 +964,16 @@ function hideGroup(id) { const el = document.getElementById(id); if (el) el.styl
 
 // ── POBLAR FILTROS CASCADA (desde ejecucion_nacional) ───────────
 async function poblarNivel() {
+  const NIVEL_NOMBRES = {
+    E: 'Gobierno Nacional',
+    M: 'Gobiernos Locales (Municipalidades)',
+    R: 'Gobiernos Regionales'
+  };
   try {
-    const data = await sbGet('ejecucion_nacional?select=nivel_gobierno,nivel_gobierno_nombre&pim=gt.0&limit=5000');
-    const map = new Map();
-    data.forEach(r => { if (r.nivel_gobierno && r.nivel_gobierno_nombre) map.set(r.nivel_gobierno, r.nivel_gobierno_nombre); });
-    const pairs = [...map.entries()]
-      .map(([value, label]) => ({ value, label }))
+    const data = await sbGet('ejecucion_nacional?select=nivel_gobierno&pim=gt.0&limit=5000');
+    const codigos = [...new Set(data.map(r => r.nivel_gobierno).filter(Boolean))];
+    const pairs = codigos
+      .map(code => ({ value: code, label: NIVEL_NOMBRES[code] || code }))
       .sort((a, b) => a.label.localeCompare(b.label, 'es'));
     fillSelectPairs('filter-nivel', pairs, '— Todos —');
   } catch (e) {
