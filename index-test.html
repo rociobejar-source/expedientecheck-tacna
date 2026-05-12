@@ -875,7 +875,7 @@ let hasNextPage     = false;
 const PAGE_SIZE     = 100;
 
 let filtroNivel        = '';   // nivel_gobierno (E, R, M)
-let filtroPliego       = '';   // pliego_nombre  (Ministerio para E; GR para R)
+let filtroPliego       = '';   // sector_nombre para E; pliego_nombre para R
 let filtroDepartamento = '';   // departamento_nombre
 let filtroProvincia    = '';   // provincia_nombre
 let filtroEjecutora    = '';   // ejecutora code (TEXT)
@@ -982,15 +982,17 @@ async function poblarNivel() {
   }
 }
 
-// Filtro 1 post-nivel para E y R: pliego_nombre
+// Filtro 1 post-nivel para E y R: sector_nombre (E) o pliego_nombre (R)
 async function poblarPliego() {
-  const LABELS = { E: 'Entidad / Programa', R: 'Gobierno Regional' };
-  const label = LABELS[filtroNivel] || 'Entidad';
+  const LABELS = { E: 'Sector / Ministerio', R: 'Gobierno Regional' };
+  const label = LABELS[filtroNivel] || 'Sector';
   disableSelect('filter-sector', `— Cargando... —`);
   try {
-    const url = `ejecucion_nacional?select=pliego_nombre&pim=gt.0&limit=5000&nivel_gobierno=eq.${encodeURIComponent(filtroNivel)}`;
+    // Para E usamos sector_nombre (dato correcto del MEF); para R usamos pliego_nombre
+    const col = filtroNivel === 'E' ? 'sector_nombre' : 'pliego_nombre';
+    const url = `ejecucion_nacional?select=${col}&pim=gt.0&limit=5000&nivel_gobierno=eq.${encodeURIComponent(filtroNivel)}`;
     const data = await sbGet(url);
-    const vals = [...new Set(data.map(r => r.pliego_nombre).filter(Boolean))].sort();
+    const vals = [...new Set(data.map(r => r[col]).filter(Boolean))].sort();
     fillSelect('filter-sector', vals, '— Todas —');
     document.querySelector('#group-sector label').textContent = label;
     showGroup('group-sector');
@@ -1112,7 +1114,11 @@ async function cargarKPIs() {
 function buildParams(extra = '') {
   const parts = ['pim=gt.0'];
   if (filtroNivel)        parts.push(`nivel_gobierno=eq.${encodeURIComponent(filtroNivel)}`);
-  if (filtroPliego)       parts.push(`pliego_nombre=eq.${encodeURIComponent(filtroPliego)}`);
+  if (filtroPliego) {
+    // Para E filtramos por sector_nombre; para R por pliego_nombre
+    const col = filtroNivel === 'E' ? 'sector_nombre' : 'pliego_nombre';
+    parts.push(`${col}=eq.${encodeURIComponent(filtroPliego)}`);
+  }
   if (filtroDepartamento) parts.push(`departamento_nombre=eq.${encodeURIComponent(filtroDepartamento)}`);
   if (filtroProvincia)    parts.push(`provincia_nombre=eq.${encodeURIComponent(filtroProvincia)}`);
   if (filtroEjecutora)    parts.push(`ejecutora=eq.${encodeURIComponent(filtroEjecutora)}`);
