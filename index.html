@@ -212,6 +212,14 @@
       padding: 1px 6px;
       margin-top: 4px;
       color: var(--muted);
+      text-decoration: none;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s, border-color 0.15s;
+    }
+    a.cui-badge:hover {
+      background: var(--accent-lt);
+      border-color: var(--accent);
+      color: var(--accent);
     }
     .f12b-badge {
       display: inline-block;
@@ -608,8 +616,7 @@
 
 <script>
 // ══════════════════════════════════════════════════════════════
-// CONFIG — único lugar donde se define la entidad.
-// Para un nuevo deploy: cambia solo SLUG.
+// CONFIG
 // ══════════════════════════════════════════════════════════════
 const API  = 'https://api.expedientecheck.com';
 const SLUG = new URLSearchParams(window.location.search).get('e') || 'tacna';
@@ -683,13 +690,11 @@ async function cargarObras() {
     obras       = dataObras.obras || [];
     kpisEntidad = dataEntidad;
 
-    // Nombre de la entidad desde el API
     if (dataEntidad.entidad?.nombre) {
       document.getElementById('entidad-nombre').textContent = dataEntidad.entidad.nombre;
       document.title = `ExpedienteCheck · ${dataEntidad.entidad.nombre}`;
     }
 
-    // Nota de datos manuales
     const tieneDatosManual = obras.some(o => o.actualizado_manualmente);
     document.getElementById('public-note-text').textContent = tieneDatosManual
       ? 'Data sincronizada diariamente con SSI-MEF e InfoObras · Contiene actualizaciones manuales'
@@ -711,7 +716,7 @@ async function cargarObras() {
 
 document.getElementById('btn-actualizar').addEventListener('click', cargarObras);
 
-// ── STATS — siempre desde el API ─────────────────────────────
+// ── STATS ─────────────────────────────────────────────────────
 function renderStats() {
   if (!kpisEntidad) return;
 
@@ -770,6 +775,8 @@ function renderTabla() {
     const avPct  = o.avance_2026_pct   != null ? Number(o.avance_2026_pct)   : null;
     const brecha = (fis != null && fin != null) ? (fin - fis).toFixed(1) : null;
 
+    const ssiUrl = `https://ofi5.mef.gob.pe/ssi/Ssi/Index?codigo=${o.cui}&tipo=2`;
+
     const badgeAlerta = alerta === 'rojo'
       ? `<span class="badge rojo">Brecha >20%</span>`
       : alerta === 'amarillo'
@@ -788,11 +795,18 @@ function renderTabla() {
         <div class="obra-nombre">${o.nombre || 'Sin nombre'}</div>
         <div class="obra-entidad">${o.entidad || o.modalidad || ''}</div>
         <div>
-          <span class="cui-badge">${o.cui}</span>
+          <span class="cui-badge" onclick="window.open(`${ssiUrl}`,`_blank`)" title="Ver en SSI-MEF" style="cursor:pointer">${o.cui} ↗</span>
           ${o.f12b_dias_retraso > 0 ? `<span class="f12b-badge late">F12B +${o.f12b_dias_retraso}d</span>` : ''}
         </div>
       </td>
-      <td style="font-family:var(--mono);font-size:12px;color:var(--muted)">${o.cui}</td>
+      <td>
+        <span onclick="window.open(`${ssiUrl}`, `_blank`)"
+           style="font-family:var(--mono);font-size:12px;color:var(--muted);text-decoration:none;border-bottom:1px dashed var(--border);cursor:pointer;"
+           title="Ver en SSI-MEF"
+           onmouseover="this.style.color='var(--accent)';this.style.borderBottomColor='var(--accent)'"
+           onmouseout="this.style.color='var(--muted)';this.style.borderBottomColor='var(--border)'"
+        >${o.cui}</span>
+      </td>
       <td class="monto">${fmtM(o.costo_proyecto)}</td>
       <td class="progress-col">
         <div class="prog-row">
